@@ -2,11 +2,9 @@
 Downloader class for f.xunlei.com
 """
 
-import simplejson as json
-import requests
-import re
+import simplejson as json, re, requests, inspect
 from StringIO import StringIO
-
+from os.path import dirname
 from __base__ import BaseDownloader, BaseDownloaderException
 
 class Downloader(BaseDownloader):
@@ -16,17 +14,24 @@ class Downloader(BaseDownloader):
     url_id_pattern = re.compile("^(?:http://)?f.xunlei.com/\d+/(?:f/|file/|folder#)[0-9a-f-]+$")
     parser_re      = re.compile("^(?:http://)?f.xunlei.com/(\d+)/(f/|file/|folder#)([0-9a-f-]+)$")
 
+    default_cookie_file = dirname(inspect.getfile(inspect.currentframe())) + "/../../cookies/"  + brand
+
     def __init__(self):
         pass
 
-    def login(self, cookie_file):
+    def login(self, cookie = None):
+        if cookie == None:
+            cookie_file = self.default_cookie_file
+        else:
+            cookie_file = cookie
         # open cookie file
+        print "Read cookie file %s" % cookie_file
         if not cookie_file:
             return {}
         try:
             f = open(cookie_file, "r")
         except Exception as e:
-            raise BaseDownloaderException("Cannot open cookie file, %r" % e)
+            raise BaseDownloaderException("Cannot open cookie filei %s, %r" % (cookie_file, e))
 
         # read cookie file into dict
         cookie = {}

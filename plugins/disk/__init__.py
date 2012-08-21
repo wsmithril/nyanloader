@@ -15,14 +15,13 @@ known_brand = []
 for module_file in glob.glob(dirname(inspect.getfile(inspect.currentframe())) + "/*.py"):
     module_name = basename(module_file)[0:-3]
     if module_name != "__init__" and module_name != "__base__":
-        log("disk module found: " + module_name)
         try:
             mod = __import__(module_name, globals(), locals(), [], -1)
             c   = mod.Downloader()
             known_brand.append(c)
-            log("Module %s for %s imported" % (module_name, c.brand))
+            print "Module %s for %s imported" % (module_name, c.brand)
         except ImportError as IE:
-            log("failed, error: " + repr(IE), 4)
+            print "Import %s failed, error: %s" %(module_name, repr(IE))
 
 # get brand from url
 def get_class(url):
@@ -31,7 +30,8 @@ def get_class(url):
         take url, and return coresponding Downloader class.
     """
     for c in known_brand:
-        if c.url_pattern:
+        print "match %s for %s" % (url, c.brand)
+        if c.url_pattern(url):
             return c
     return None
 

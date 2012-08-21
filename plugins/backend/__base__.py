@@ -4,6 +4,14 @@ Basic class for backend class
 
 import config
 
+task_status = {
+        "waiting":  0
+    ,   "active":   1
+    ,   "complete": 2
+    ,   "error":    3
+    ,   "paused":   4
+    ,   "other":    5}
+
 class BackendException(Exception):
     """
     Exceptions
