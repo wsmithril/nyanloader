@@ -75,10 +75,16 @@ def main_loop(url_list):
                 continue
 
             # new task
-            task = Task(down_url["url"], down_url["filename"])
+            task = Task(down_url["url"], down_url["filename"], down_url["options"])
             print "Starting download %s from %s" % (down_url["filename"], url)
             key = task.start()
             downloading[key] = task
+            current_down += 1
+
+        # querry task status
+        for k, task in downloaing.items():
+            state = task.status()
+
 
 
 if __name__ == "__main__":

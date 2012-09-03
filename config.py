@@ -15,4 +15,7 @@ backend = "aria2c"
 aria2c_addr = "127.0.0.1"
 aria2c_port = 9410
 
+# ==== f.xunlei.com =====
+thunderF_username = "l200646@rtrtr.com"
+thunderF_password = "fuck_xunlei"
 

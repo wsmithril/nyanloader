@@ -68,7 +68,7 @@ class Backend(BaseBackend):
         ,   "--rpc-listen-port=%d" % server_port
         ,   "--rpc-listen-all=true"
         ,   "--rpc-allow-origin-all=true"
-        ,   "--load-cookies=%s" % dirname(inspect.getfile(inspect.currentframe())) + "/../../cookies/cookie"
+      #  ,   "--load-cookies=%s" % dirname(inspect.getfile(inspect.currentframe())) + "/../../cookies/cookie"
         ,   "--daemon"]
 
     pid = -1

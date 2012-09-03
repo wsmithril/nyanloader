@@ -3,9 +3,16 @@ Downloader class for f.xunlei.com
 """
 
 import simplejson as json, re, requests, inspect
+import config
 from StringIO import StringIO
 from os.path import dirname
 from __base__ import BaseDownloader, BaseDownloaderException
+from time import time
+from urllib2 import quote
+from md5 import md5
+
+def pass_hash(p, s):
+    return md5(md5(md5(p).hexdigest()).hexdigest() + s.upper()).hexdigest()
 
 class Downloader(BaseDownloader):
     brand  = "f.xunlei.com"
@@ -16,31 +23,31 @@ class Downloader(BaseDownloader):
 
     default_cookie_file = dirname(inspect.getfile(inspect.currentframe())) + "/../../cookies/"  + brand
 
+    cookies = None
+
     def __init__(self):
         pass
 
-    def login(self, cookie = None):
-        if cookie == None:
-            cookie_file = self.default_cookie_file
-        else:
-            cookie_file = cookie
-        # open cookie file
-        print "Read cookie file %s" % cookie_file
-        if not cookie_file:
-            return {}
-        try:
-            f = open(cookie_file, "r")
-        except Exception as e:
-            raise BaseDownloaderException("Cannot open cookie filei %s, %r" % (cookie_file, e))
+    def login(self, username = config.thunderF_username, password = config.thunderF_password):
+        """ use username and password to login
+            due to design flaut of in the site, We can actually bypass the verify code,
+            for f.xunlei.com provides alternative verify method in their javascript"""
+        resp = requests.get("http://login.xunlei.com/check?u=%s&t=%d" % (username, time()), headers = self.header)
+        check = resp.cookies["check_result"]
+        if check[0:2] == "0:":
+            check = check[2:]
+        post_data = "u=%s&p=%s&verifycode=%s&login_enable=1&login_hour=336&loginTime=%d" % (
+                username # username
+            ,   pass_hash(password, check) # password, salted and hashed.
+            ,   quote(check) # salt
+            ,   time() # timestamp
+        )
 
-        # read cookie file into dict
-        cookie = {}
-        for line in f.readlines():
-            if line.startswith("#"):
-                continue
-            fs = line.strip().split("\t")
-            cookie[fs[5]] = fs[6]
-        return cookie
+        resp = requests.post(
+                "http://login.xunlei.com/sec2login/?xltime=%d" % time()
+            ,   data = post_data
+            ,   cookies = resp.cookies, headers = self.header)
+        return resp.cookies
 
     def url_pattern(self, url):
         return self.url_id_pattern.match(url) and True or False
@@ -94,7 +101,10 @@ class Downloader(BaseDownloader):
         else:
             num_of_file = 1
 
-        return (dict([("filename", n["name"]), ("url", [n["url"]])])
+        last_cookies = "Cookie: " + "; ".join("%s=%s" % (k, v) for k, v in resp.cookies.items())
+
+        return (dict([("filename", n["name"]), ("url", [n["url"]]),
+                      ("options", {"header": [last_cookies] + ["%s: %s" % (k, v) for k, v in self.header.items()] + ["Referer: " + url]})])
                 for n in resp_json["data"]["nodes"]
                 if url_type == self.TYPE_FOLDER or n["nodeId"] == node)
 
