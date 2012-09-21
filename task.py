@@ -22,9 +22,11 @@ class Task(object):
         if True or self.status == task_status["waiting"]:
             self.key = backend.new_task(self.url, self.filename, options = self.options)
             self.status = task_status["active"]
+            return self.key
         else:
             print "file %s is in status \"%s\" not in waiting status" % (self.filename, self.status)
+            return None
 
-    def status(self):
+    def get_status(self):
         return backend.querry_task_status(self.key)
 

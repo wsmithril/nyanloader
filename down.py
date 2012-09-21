@@ -4,6 +4,7 @@ Main Control
 
 import os, os.path as path,  sys, argparse
 from datetime import datetime
+from time import sleep
 
 from plugins.disk import get_class
 from plugins.backend import backend, task_status
@@ -16,76 +17,65 @@ def now():
 def main_loop(url_list):
     """ main loop. Download each url in the url_list """
     all_done = False
-    all_down = False
     current_down = 0
-
-    # url_list to generator
-    url_gen = (u for u in url_list)
-
-    # down_file_gen begin with an empty generator
-    down_file_gen = (i for i in [])
 
     # downloading task status
     downloading = {}
 
-    # cookies
-    cookies = {}
+    # download file generator
+    down_url_gen = down_url_list(url_list)
 
     while not all_done:
         # start main loop
-        while not all_down and current_down <= config.max_concurrency:
-            pass_this = False
+        while current_down <= config.max_concurrency:
             try:
-                down_url = down_file_gen.next()
-                print down_url
+                down_url = down_url_gen.next()
             except StopIteration:
-                # get next url
-                try:
-                    url  = url_gen.next()
-                except StopIteration:
-                    all_down = True
-                    break
-
-                # get brand of net-disk from url
-                brand = get_class(url)
-                if not brand:
-                    print "%s not recorgnized as any known net-disk, skipped" % url
-                    pass_this = True
-                else:
-                    print "%s recorgnized as %s" % (url, brand.brand)
-
-                    # get cookie if not logged in
-                    try:
-                        cookie = cookies[brand.brand]
-                    except KeyError:
-                        cookie = brand.login()
-                        cookies[brand.brand] = cookie
-
-                    # parse url
-                    try:
-                        down_file_gen = brand.download_info(url, cookie)
-                    except Exception as e:
-                        print "Cannot parse url %s as %s, skipped" % (url, brand.brand)
-                        print "Error: " + str(e)
-
-                # pass this loop
-                pass_this = True
-
-            if pass_this:
-                continue
+                break;
 
             # new task
             task = Task(down_url["url"], down_url["filename"], down_url["options"])
-            print "Starting download %s from %s" % (down_url["filename"], url)
+            print "Starting download %s" % (down_url["filename"])
             key = task.start()
             downloading[key] = task
             current_down += 1
 
         # querry task status
-        for k, task in downloaing.items():
-            state = task.status()
+        for k, task in downloading.items():
+            state = task.get_status()
+            if state == task_status["complete"]:
+                t = downloading.pop(key)
+                print "%s Completed"
+            else:
+        sleep(5)
+def down_url_list(url_list):
+    """ generator for duwnload urls,
+        yields urls """
+    # cookies
+    cookies = {}
 
+    got_one = False
+    for url in url_list:
+        brand = get_class(url)
+        if not brand:
+            print "Cannot parse %s as any of known net-disk providor" % url
+            continue;
+        else:
+            print "%s recorgnized as %s" %(url, brand.brand)
 
+        # get cookies
+        try:
+            cookie = cookies[brand.brand]
+        except KeyError:
+            cookie = brand.login()
+
+        down_url_list = brand.download_info(url, cookie)
+        try:
+            down_url = down_url_list.next()
+        except StopIteration:
+            continue
+            cookies[brand.brand] = cookie
+        yield down_url
 
 if __name__ == "__main__":
     # build cli args parser
