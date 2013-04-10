@@ -1,14 +1,15 @@
-"""
-Main Control
-"""
+#! /bin/env pyrhon
+# -*- coding: utf-8 -*-
+
+""" Main Control """
 
 import os, os.path as path,  sys, argparse
 from datetime import datetime
 from time import sleep
+from task import Task
 
 from plugins.disk import get_class
 from plugins.backend import backend, task_status
-from task import Task
 import config
 
 def now():
@@ -23,34 +24,46 @@ def main_loop(url_list):
     downloading = {}
 
     # download file generator
-    down_url_gen = down_url_list(url_list)
+    tasks = download_task(url_list)
+    task  = None
 
-    while not all_done:
-        # start main loop
-        while current_down <= config.max_concurrency:
-            try:
-                down_url = down_url_gen.next()
-            except StopIteration:
-                break;
+    for t in tasks:
+        print "%s From %s" % (t.filename, t.url)
 
-            # new task
-            task = Task(down_url["url"], down_url["filename"], down_url["options"])
-            print "Starting download %s" % (down_url["filename"])
-            key = task.start()
-            downloading[key] = task
-            current_down += 1
+    #while not all_done:
+    #    # start main loop
+    #    while current_down <= config.max_concurrency:
+    #        try:
+    #            task = down_url_gen.next()
+    #        except StopIteration:
+    #            break;
 
-        # querry task status
-        for k, task in downloading.items():
-            state = task.get_status()
-            if state == task_status["complete"]:
-                t = downloading.pop(key)
-                print "%s Completed"
-            else:
-        sleep(5)
-def down_url_list(url_list):
-    """ generator for duwnload urls,
-        yields urls """
+    #        # new task
+    #        print "Starting download %s" % (down_url["filename"])
+    #        key = task.start()
+    #        downloading[key] = task
+    #        current_down += 1
+
+    #    # querry task status
+    #    for k, task in downloading.items():
+    #        state = task.get_status()
+    #        if state == task_status["complete"]:
+    #            t = downloading.pop(key)
+    #            print "%s Completed" % t["filename"]
+    #            current_down -= 1
+    #        else:
+    #            # show informations
+    #            print "Downloading [%s]" % (task.filename)
+
+    #    if current_down == 0:
+    #        all_done = True
+
+    #    sleep(60)
+
+
+def download_task(url_list):
+    """ generator for duwnload urls, yields urls """
+
     # cookies
     cookies = {}
 
@@ -65,17 +78,18 @@ def down_url_list(url_list):
 
         # get cookies
         try:
-            cookie = cookies[brand.brand]
+            cookie = cookies[brand]
         except KeyError:
             cookie = brand.login()
+            cookies[brand] = cookie
 
         down_url_list = brand.download_info(url, cookie)
-        try:
-            down_url = down_url_list.next()
-        except StopIteration:
-            continue
-            cookies[brand.brand] = cookie
-        yield down_url
+        while True:
+            try:
+                task = down_url_list.next()
+            except StopIteration:
+                break
+            yield task
 
 if __name__ == "__main__":
     # build cli args parser
@@ -90,8 +104,10 @@ if __name__ == "__main__":
     # get url list for cli arg and list-file
     url_list = []
     if config.listfile:
-        for line in config.listfile.readlines():
+        for line in config.listfile[0].readlines():
             url_list.append(line)
+        config.listfile[0].close()
+
     if config.url:
         url_list.extend(config.url)
 

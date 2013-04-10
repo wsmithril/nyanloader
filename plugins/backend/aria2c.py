@@ -3,7 +3,7 @@ aria2c json rpc control class
 """
 
 import urllib2, os, socket, subprocess, simplejson as json, inspect
-import config
+import config, task
 
 from os.path import dirname
 from StringIO import StringIO
@@ -63,13 +63,12 @@ class Backend(BaseBackend):
     server_url  = "http://%s:%d/jsonrpc" % (server_addr, server_port)
 
     start_args = [
-            "aria2c"
-        ,   "--enable-rpc"
-        ,   "--rpc-listen-port=%d" % server_port
-        ,   "--rpc-listen-all=true"
-        ,   "--rpc-allow-origin-all=true"
-      #  ,   "--load-cookies=%s" % dirname(inspect.getfile(inspect.currentframe())) + "/../../cookies/cookie"
-        ,   "--daemon"]
+        "aria2c"
+      , "--enable-rpc"
+      , "--rpc-listen-port=%d" % server_port
+      , "--rpc-listen-all=true"
+      , "--rpc-allow-origin-all=true"
+      , "--daemon"]
 
     pid = -1
 
@@ -81,12 +80,9 @@ class Backend(BaseBackend):
         """ start aria2c server if not started """
 
         # get cookie file
-
         if self.server_addr != "localhost" and self.server_addr != "127.0.0.1":
             if self.status() != self.BE_RUNNING:
                 raise BackendException("aria2c server on %s not started" % self.server_addr)
-            else:
-                pass
         else:
             if self.status() != self.BE_RUNNING:
                 self.start_server()
@@ -94,9 +90,7 @@ class Backend(BaseBackend):
                 print "aria2c server already started"
 
     def status(self):
-        """
-        querry backend status, return BE_RUNNING or BE_DOWN or BE_NA
-        """
+        """ querry backend status, return BE_RUNNING or BE_DOWN or BE_NA """
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if s.connect_ex((self.server_addr, self.server_port)) != 0:
             return self.BE_DOWN
@@ -105,16 +99,15 @@ class Backend(BaseBackend):
             return self.BE_RUNNING
 
     def start_server(self):
-        # start aria2c rpc server
-        self.pid = subprocess.Popen(self.start_args, close_fds = True).pid
-        print "aria2c started, pid: %d" % self.pid
+        """ start aria2c rpc server """
+        self.process = subprocess.Popen(self.start_args, close_fds = True)
+        print "aria2c started"
 
     def __rpc_call__(self, method, params = []):
         json_dict = self.rpc_basic
         json_dict["method"] = method
         json_dict["params"] = params
 
-        print "json requrst: %r" % json_dict
         # call the rpc server
         try:
             call = urllib2.urlopen(self.server_url, json.dumps(json_dict))
@@ -124,17 +117,17 @@ class Backend(BaseBackend):
             raise BackendException("RPC Failed, call: %r", json_dict)
         return resp["result"]
 
-    def new_task(self, uri, out = None, options = {}):
-        local_opt = {"split": len(uri)}
-        if out:
-            # if filenmane given
-            local_opt["out"] = out
+    def new_task(self, task):
+        local_opt = {"split": len(task.url)}
+        if task.filename:
+            # when given a filename, use it
+            local_opt["out"] = task.filename
         resp = self.__rpc_call__(
                     method = "aria2.addUri"
-                ,   params = [
-                        uri
+                  , params = [
+                        task.url
                       , dict(self.default_option.items()
-                           + options.items()
+                           + task.opts.items()
                            + local_opt.items())])
         return resp
 
@@ -150,9 +143,9 @@ class Backend(BaseBackend):
             if resp["errorCode"] == "11":
                 st = task_status["other"]
             return {
-                    "status": st
-                ,   "errno": resp["errorCode"]
-                ,   "errmsg": error_code[resp["errorCode"]]}
+                "status": st
+              , "errno": resp["errorCode"]
+              , "errmsg": error_code[resp["errorCode"]]}
         else:
             return st
 

@@ -1,6 +1,4 @@
-"""
-module for backends
-"""
+""" module for backends """
 
 import config
 from __base__ import task_status

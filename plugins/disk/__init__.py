@@ -5,11 +5,6 @@
 import glob, inspect
 from os.path import dirname, basename
 
-def log(msg, lv = 3):
-    """ simple log function """
-    if lv <= 3:
-        print msg
-
 # import all module and store them in known_brand
 known_brand = []
 for module_file in glob.glob(dirname(inspect.getfile(inspect.currentframe())) + "/*.py"):

@@ -1,32 +1,22 @@
-"""
-Downloading tasks
-"""
-
 import config
-from plugins.disk import get_class
 from plugins.backend import backend, task_status
 
 class Task(object):
-    """ downloading task. each downloading file should have one """
+    """ Downloading task Control """
 
-    def __init__(self, url, filename, options = {}):
-        self.url = url
+    def __init__(self, url, filename, opts = []):
+        self.url      = url
         self.filename = filename
-        self.options  = options
-        self.stauts = task_status["waiting"]
-        self.errno = 0
-        self.errmsg = ""
-        self.key = None
+        self.key      = None
+        self.opts     = opts
 
     def start(self):
-        if True or self.status == task_status["waiting"]:
-            self.key = backend.new_task(self.url, self.filename, options = self.options)
-            self.status = task_status["active"]
-            return self.key
-        else:
-            print "file %s is in status \"%s\" not in waiting status" % (self.filename, self.status)
-            return None
+        self.key = backend.start_task(self)
+        return self
 
-    def get_status(self):
-        return backend.querry_task_status(self.key)
+    def status(self):
+        if self.key:
+            return backend.status(self.key)
+        else:
+            return task_status["waiting"]
 
