@@ -24,12 +24,17 @@ class Downloader(BaseDownloader):
     # pretented to be firefox 20.0 on win 7
     header = {"User-Agent": "MozillaMozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20130403 Firefox/20.0"}
 
-    url_id_pattern = re.compile("^(?:http://)?pan.baidu.com/share/link\?")
-    url_parse = re.compile("^(?:http://)?pan.baidu.com/share/link\?(.*)(?:#dir/path=(.*))?$")
+    url_id_pattern = re.compile(r"^(?:http://)?pan.baidu.com/share/link\?")
+    url_parse = re.compile("^(?:http://)?pan.baidu.com/share/link\?([^#]*)(?:#dir/path=(.*))?$")
 
     single_url = map(lambda x: re.compile(x, re.MULTILINE), [
-            '<a\s+class="new-dbtn"\s+href="([^"]*)".*>',
-            '<span class="header-name" title="([^"]*)".*>'])
+            r'<a\s+class="new-dbtn"\s+href="([^"]*)".*>',
+            r'<span class="header-name" title="([^"]*)".*>'])
+
+    single_dir = map(lambda r: re.compile(r), [
+        r'\\"server_filename\\":\\"((?:\\.|[0-9a-zA-Z])+)\\",',
+        r'\\"parent_path\\":\\"((?:%|\w)+)\\",'])
+
     cookies = None
 
     def __init__(self):
@@ -49,29 +54,7 @@ class Downloader(BaseDownloader):
         except Exception as e:
             raise BaseDownloaderException("Malformed url: %s, %s" % (url, str(e)))
 
-        if arg2:
-            # this is an dir
-            # url to fetch file list
-            resq_url = "http://pan.baidu.com/share/list?%s&dir=%s" % (arg1, arg2)
-
-            # get file list
-            try:
-                resp = requests.get(resq_url, headers = self.header)
-            except Exception as e:
-                raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
-
-            resp_json = json.load(StringIO(resp.text))
-
-            if resp_json["errno"] != 0:
-                print "resp: %r" % resp_json
-                print "url: %s"  % resq_url
-                raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
-
-            # print "\n".join("%s - %s" % (n["server_filename"], n["dlink"]) for n in resp_json["list"])
-            for n in resp_json["list"]:
-                yield (task.Task(filename = n["server_filename"], url = [n["dlink"]],
-                     opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
-        else:
+        if not arg2:
             # single file
             resq_url = url
 
@@ -81,12 +64,34 @@ class Downloader(BaseDownloader):
             except Exception as e:
                 raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
 
-            try:
+            filename = self.single_url[1].search(resp.text)
+            if filename:
                 url      = self.single_url[0].search(resp.text).group(1)
-                filename = self.single_url[1].search(resp.text).group(1)
-            except Exception as e:
-                raise BaseDownloaderException( "Fail to get file from %s, %s" % (url, str(e)));
-
-            yield (task.Task(filename = filename, url = url,
+                filename = filename.group(1)
+                yield (task.Task(filename = filename, url = url,
                      opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
+                raise StopIteration
+            else:
+                arg2 = "/".join([
+                    self.single_dir[1].search(resp.text).group(1),
+                    quote(self.single_dir[0].search(resp.text).group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8"))])
+
+        resq_url = "http://pan.baidu.com/share/list?%s&dir=%s" % (arg1, arg2)
+
+        try:
+            resp = requests.get(resq_url, headers = self.header)
+        except Exception as e:
+            raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
+
+        resp_json = json.load(StringIO(resp.text))
+
+        if resp_json["errno"] != 0:
+            print "resp: %r" % resp_json
+            print "url: %s"  % resq_url
+            raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
+
+        # print "\n".join("%s - %s" % (n["server_filename"], n["dlink"]) for n in resp_json["list"])
+        for n in resp_json["list"]:
+            yield (task.Task(filename = n["server_filename"], url = [n["dlink"]],
+                 opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
 
