@@ -11,12 +11,12 @@ class Task(object):
         self.opts     = opts
 
     def start(self):
-        self.key = backend.start_task(self)
+        self.key = backend.new_task(self)
         return self
 
     def status(self):
         if self.key:
-            return backend.status(self.key)
+            return backend.querry_task_status(self.key)
         else:
             return task_status["waiting"]
 

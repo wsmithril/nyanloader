@@ -11,9 +11,7 @@ task_status = {
     ,   "other":    5}
 
 class BackendException(Exception):
-    """
-    Exceptions
-    """
+    """ Exceptions """
     def __init__(self, msg = "Backend Exceptions"):
         self.message = msg
 
@@ -44,9 +42,6 @@ class BaseBackend(object):
     BE_RUNNING = 0
     BE_DOWN    = 1
     BE_NA      = 2
-
-    def __new__(self):
-        pass
 
     def status(self, url):
         return self.BE_NA

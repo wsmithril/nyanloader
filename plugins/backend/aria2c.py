@@ -53,9 +53,7 @@ error_code = {
     ,   "30": "If aria2 could not parse JSON-RPC request." }
 
 class Backend(BaseBackend):
-    """
-    Backend for aria2c json rpc server
-    """
+    """ Backend for aria2c json rpc server """
 
     backend     = "aria2c"
     server_port = config.aria2c_port
@@ -79,11 +77,12 @@ class Backend(BaseBackend):
     def __init__(self):
         """ start aria2c server if not started """
 
-        # get cookie file
         if self.server_addr != "localhost" and self.server_addr != "127.0.0.1":
+            # Raise an exception if the remote server not started
             if self.status() != self.BE_RUNNING:
                 raise BackendException("aria2c server on %s not started" % self.server_addr)
         else:
+            # try to start server if we are running on local machine
             if self.status() != self.BE_RUNNING:
                 self.start_server()
             else:
@@ -113,8 +112,8 @@ class Backend(BaseBackend):
             call = urllib2.urlopen(self.server_url, json.dumps(json_dict))
             resp = json.load(StringIO(call.read()))
             call.close()
-        except:
-            raise BackendException("RPC Failed, call: %r", json_dict)
+        except Exception as e:
+            raise BackendException("RPC Failed, call: %r, %s" % (json_dict, str(e)))
         return resp["result"]
 
     def new_task(self, task):

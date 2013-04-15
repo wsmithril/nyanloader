@@ -66,9 +66,9 @@ class Downloader(BaseDownloader):
 
             filename = self.single_url[1].search(resp.text)
             if filename:
-                url      = self.single_url[0].search(resp.text).group(1)
+                url = self.single_url[0].search(resp.text).group(1).replace("&amp;", "&")
                 filename = filename.group(1)
-                yield (task.Task(filename = filename, url = url,
+                yield (task.Task(filename = filename, url = [url],
                      opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
                 raise StopIteration
             else:

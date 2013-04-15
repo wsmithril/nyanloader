@@ -1,15 +1,15 @@
-#! /bin/env pyrhon
+#! /bin/env python
 # -*- coding: utf-8 -*-
 
 """ Main Control """
 
-import os, os.path as path,  sys, argparse
+import os, os.path as path, sys, argparse
 from datetime import datetime
 from time import sleep
 from task import Task
 
-from plugins.disk import get_class
 from plugins.backend import backend, task_status
+from plugins.disk import get_class
 import config
 
 def now():
@@ -22,44 +22,50 @@ def main_loop(url_list):
 
     # downloading task status
     downloading = {}
+    error_list  = []
 
     # download file generator
     tasks = download_task(url_list)
     task  = None
 
-    for t in tasks:
-        print "%s From %s" % (t.filename, t.url)
+    while not all_done:
+        # start main loop
+        while current_down <= config.max_concurrency:
+            try:
+                task = tasks.next()
+            except StopIteration:
+                break;
 
-    #while not all_done:
-    #    # start main loop
-    #    while current_down <= config.max_concurrency:
-    #        try:
-    #            task = down_url_gen.next()
-    #        except StopIteration:
-    #            break;
+            # new task
+            print "Starting download %s" % (task.filename)
+            key = task.start()
+            downloading[key] = task
+            current_down += 1
 
-    #        # new task
-    #        print "Starting download %s" % (down_url["filename"])
-    #        key = task.start()
-    #        downloading[key] = task
-    #        current_down += 1
+        # querry task status
+        for k, task in downloading.items():
+            state = task.status()
+            if state == task_status["complete"]:
+                t = downloading.pop(key)
+                print "%s Completed" % t["filename"]
+                current_down -= 1
+            elif state == task_status["error"]:
+                t = downloading.pop(key)
+                print "%s Error" % t["filename"]
+                error_list.append(t)
+                current_down -= 1
+            else:
+                # show informations
+                print "Downloading [%s]" % (task.filename)
 
-    #    # querry task status
-    #    for k, task in downloading.items():
-    #        state = task.get_status()
-    #        if state == task_status["complete"]:
-    #            t = downloading.pop(key)
-    #            print "%s Completed" % t["filename"]
-    #            current_down -= 1
-    #        else:
-    #            # show informations
-    #            print "Downloading [%s]" % (task.filename)
+        if current_down == 0:
+            all_done = True
 
-    #    if current_down == 0:
-    #        all_done = True
+        sleep(60)
 
-    #    sleep(60)
-
+    # show all failed tasks
+    for t in error_list:
+        print "%s Failed" % t.filename
 
 def download_task(url_list):
     """ generator for duwnload urls, yields urls """
