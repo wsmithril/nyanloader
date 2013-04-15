@@ -3,7 +3,7 @@
 
 """ Main Control """
 
-import os, os.path as path, sys, argparse
+import os, os.path as path, sys, argparse, signal
 from datetime import datetime
 from time import sleep
 from task import Task
@@ -69,6 +69,8 @@ def main_loop(url_list):
                     task.size == 0 and "n.a." or "%5.2f%%" % (100.0 * task.downloaded / task.size),
                     (task.size == 0 or task.speed == 0) and "n.a." or "%ds" % (1.0 * (task.size - task.downloaded) / task.speed))
 
+    # close backend server
+    backend.terminate()
 
     # show all failed tasks
     for t in error_list:
@@ -127,6 +129,15 @@ if __name__ == "__main__":
         arg_parser.print_help()
         print "No url to download"
         exit(3)
+
+    # Trap SIGINT
+    def stop_backend(sig, frame):
+        print "SIGINT caught, send SIGTERM to backend"
+        backend.terminate()
+        sys.exit(127)
+
+    signal.signal(signal.SIGINT,  stop_backend)
+    signal.signal(signal.SIGTERM, stop_backend)
 
     # start main loop
     main_loop(url_list)

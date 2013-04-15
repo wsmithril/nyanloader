@@ -2,7 +2,7 @@
 aria2c json rpc control class
 """
 
-import urllib2, os, socket, subprocess, simplejson as json, inspect
+import urllib2, os, socket, subprocess, simplejson as json, inspect, signal
 import config, task
 
 from os.path import dirname
@@ -65,9 +65,7 @@ class Backend(BaseBackend):
       , "--enable-rpc"
       , "--rpc-listen-port=%d" % server_port
       , "--rpc-listen-all=true"
-      , "--rpc-allow-origin-all=true"
-      , "--daemon"]
-
+      , "--rpc-allow-origin-all=true"]
     pid = -1
 
     # basic aria2c options
@@ -76,7 +74,7 @@ class Backend(BaseBackend):
 
     def __init__(self):
         """ start aria2c server if not started """
-
+        self.process = None
         if self.server_addr != "localhost" and self.server_addr != "127.0.0.1":
             # Raise an exception if the remote server not started
             if self.status() != self.BE_RUNNING:
@@ -99,7 +97,13 @@ class Backend(BaseBackend):
 
     def start_server(self):
         """ start aria2c rpc server """
-        self.process = subprocess.Popen(self.start_args, close_fds = True)
+        self.process = subprocess.Popen(self.start_args,
+                stdin  = subprocess.PIPE,
+                stdout = subprocess.PIPE,
+                stderr = subprocess.PIPE)
+        self.process.stdout.close()
+        self.process.stderr.close()
+        self.process.stdin.close()
         print "aria2c started"
 
     def __rpc_call__(self, method, params = []):
@@ -146,6 +150,16 @@ class Backend(BaseBackend):
         if st == task_status["error"] and resp["errorCode"] == "11":
             return task_status["other"]
         return st
+
+    def terminate(self):
+        """ terminate server """
+        if self.server_addr == "localhost" or self.server_addr == "127.0.0.1":
+            # only terminate server running on local
+            if self.process:
+                print "Send SIGTERM to backend [%d]" % self.process.pid
+                self.process.send_signal(signal.SIGTERM)
+                print "wait backend to exit"
+                self.process.wait()
 
     def cleanup(self):
         try:
