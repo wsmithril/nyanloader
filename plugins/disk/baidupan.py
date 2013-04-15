@@ -9,6 +9,9 @@ from os.path import dirname
 from __base__ import BaseDownloader, BaseDownloaderException
 from time import time
 from urllib2 import quote
+from HTMLParser import HTMLParser
+
+html_parser = HTMLParser()
 
 class Downloader(BaseDownloader):
     """
@@ -66,7 +69,7 @@ class Downloader(BaseDownloader):
 
             filename = self.single_url[1].search(resp.text)
             if filename:
-                url = self.single_url[0].search(resp.text).group(1).replace("&amp;", "&")
+                url = html_parser.unescape(self.single_url[0].search(resp.text).group(1))
                 filename = filename.group(1)
                 yield (task.Task(filename = filename, url = [url],
                      opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
