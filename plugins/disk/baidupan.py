@@ -35,8 +35,8 @@ class Downloader(BaseDownloader):
             r'<span class="header-name" title="([^"]*)".*>'])
 
     single_dir = map(lambda r: re.compile(r), [
-        r'\\"server_filename\\":\\"((?:\\.|[0-9a-zA-Z])+)\\",',
-        r'\\"parent_path\\":\\"((?:%|\w)+)\\",'])
+        r'\\"server_filename\\":\\"((?:\\.|[^"])+?)\\",',
+        r'\\"parent_path\\":\\"((?:%|\w)*?)\\",'])
 
     cookies = None
 

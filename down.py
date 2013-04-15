@@ -47,11 +47,11 @@ def main_loop(url_list):
         for k, task in downloading.items():
             state = task.status()
             if state == task_status["complete"] or state == task_status["other"]:
-                t = downloading.pop(key)
+                t = downloading.pop(k)
                 print "[%s] Completed" % t.filename
                 current_down -= 1
             elif state == task_status["error"]:
-                t = downloading.pop(key)
+                t = downloading.pop(k)
                 print "[%s] Error" % t.filename
                 error_list.append(t)
                 current_down -= 1
@@ -130,7 +130,7 @@ if __name__ == "__main__":
         print "No url to download"
         exit(3)
 
-    # Trap SIGINT
+    # Trap SIGINT and SIFTERM
     def stop_backend(sig, frame):
         print "SIGINT caught, send SIGTERM to backend"
         backend.terminate()
@@ -140,5 +140,10 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, stop_backend)
 
     # start main loop
-    main_loop(url_list)
-
+    try:
+        main_loop(url_list)
+    except Exception as e:
+        print "Well, sonething went wrong..."
+        backend.terminate()
+        import traceback
+        traceback.print_exc()
