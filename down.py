@@ -51,7 +51,7 @@ def main_loop(url_list):
                 current_down -= 1
             elif state == task_status["error"]:
                 t = downloading.pop(key)
-                print "%s Error" % t["filename"]
+                print "%s Error" % t.filename
                 error_list.append(t)
                 current_down -= 1
             else:
@@ -73,7 +73,6 @@ def download_task(url_list):
     # cookies
     cookies = {}
 
-    got_one = False
     for url in url_list:
         brand = get_class(url)
         if not brand:
