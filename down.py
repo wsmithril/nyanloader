@@ -17,7 +17,6 @@ def now():
 
 def main_loop(url_list):
     """ main loop. Download each url in the url_list """
-    all_done = False
     current_down = 0
 
     # downloading task status
@@ -28,7 +27,7 @@ def main_loop(url_list):
     tasks = download_task(url_list)
     task  = None
 
-    while not all_done:
+    while True:
         # start main loop
         while current_down <= config.max_concurrency:
             try:
@@ -37,31 +36,39 @@ def main_loop(url_list):
                 break;
 
             # new task
-            print "Starting download %s" % (task.filename)
+            print "Starting download [%s]" % (task.filename)
             key = task.start()
             downloading[key] = task
             current_down += 1
 
+        sleep(5)
+
         # querry task status
         for k, task in downloading.items():
             state = task.status()
-            if state == task_status["complete"]:
+            if state == task_status["complete"] or state == task_status["other"]:
                 t = downloading.pop(key)
-                print "%s Completed" % t["filename"]
+                print "[%s] Completed" % t.filename
                 current_down -= 1
             elif state == task_status["error"]:
                 t = downloading.pop(key)
-                print "%s Error" % t.filename
+                print "[%s] Error" % t.filename
                 error_list.append(t)
                 current_down -= 1
-            else:
-                # show informations
-                print "Downloading [%s]" % (task.filename)
 
         if current_down == 0:
-            all_done = True
+            break;
 
-        sleep(60)
+        print
+        print "===== Downloading %d items =====" % len(downloading)
+        for k, task in downloading.items():
+            # show informations
+            print "Downloading [%s] @ %5.2fkB/s, %s completed, ETA: %s" % (
+                    task.filename,
+                    task.speed / 1024.0,
+                    task.size == 0 and "n.a." or "%5.2f%%" % (100.0 * task.downloaded / task.size),
+                    (task.size == 0 or task.speed == 0) and "n.a." or "%ds" % (1.0 * (task.size - task.downloaded) / task.speed))
+
 
     # show all failed tasks
     for t in error_list:

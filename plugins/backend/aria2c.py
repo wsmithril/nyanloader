@@ -130,23 +130,22 @@ class Backend(BaseBackend):
                            + local_opt.items())])
         return resp
 
-    def querry_task_status(self, GID):
+    def querry_task_status(self, task):
         try:
             resp =  self.__rpc_call__(method = "aria2.tellStatus",
-                                     params = [GID])
+                                     params = [task.key])
         except Exception as e:
-            raise BackendException("Qureey status fail. %s" % repr(e))
+            raise BackendException("Qureey status fail.resp: %s" % (str(e)))
 
         st = status_mapping[resp["status"]]
-        if st == task_status["error"]:
-            if resp["errorCode"] == "11":
-                st = task_status["other"]
-            return {
-                "status": st
-              , "errno": resp["errorCode"]
-              , "errmsg": error_code[resp["errorCode"]]}
-        else:
-            return st
+
+        task.size           = int(resp["totalLength"])
+        task.downloaded     = int(resp["completedLength"])
+        task.speed          = int(resp["downloadSpeed"])
+
+        if st == task_status["error"] and resp["errorCode"] == "11":
+            return task_status["other"]
+        return st
 
     def cleanup(self):
         try:

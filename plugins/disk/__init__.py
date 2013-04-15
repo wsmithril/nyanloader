@@ -25,7 +25,6 @@ def get_class(url):
         take url, and return coresponding Downloader class.
     """
     for c in known_brand:
-        print "match %s for %s" % (url, c.brand)
         if c.url_pattern(url):
             return c
     return None
