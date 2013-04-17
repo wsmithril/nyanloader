@@ -28,11 +28,11 @@ class Downloader(BaseDownloader):
     header = {"User-Agent": "MozillaMozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20130403 Firefox/20.0"}
 
     url_id_pattern = re.compile(r"^(?:http://)?pan.baidu.com/share/link\?")
-    url_parse = re.compile("^(?:http://)?pan.baidu.com/share/link\?([^#]*)(?:#dir/path=(.*))?$")
+    url_parse = re.compile("^(?:http://)?pan.baidu.com/share/link\?([^#]*)(?:#(.*))?$")
 
     single_url = map(lambda x: re.compile(x, re.MULTILINE), [
-            r'<a\s+class="new-dbtn"\s+href="([^"]*)".*>',
-            r'<span class="header-name" title="([^"]*)".*>'])
+        r'<a\s+class="new-dbtn"\s+href="([^"]*)".*>',
+        r'\\"server_filename\\":\\"((?:\\.|[^"])+?)\\",'])
 
     single_dir = map(lambda r: re.compile(r), [
         r'\\"server_filename\\":\\"((?:\\.|[^"])+?)\\",',
@@ -52,12 +52,14 @@ class Downloader(BaseDownloader):
 
     def download_info(self, url, cookie = None):
         # parse url
+        arg1 = None
+        arg2 = None
         try:
             arg1, arg2 = self.url_parse.match(url).group(1, 2)
         except Exception as e:
-            raise BaseDownloaderException("Malformed url: %s, %s" % (url, str(e)))
+            raise BaseDownloaderException("URL Malform: %s, %s" % (url, str(e)))
 
-        if not arg2:
+        if not arg2 or not arg2.startswith("dir/path="):
             # single file
             resq_url = url
 
@@ -70,7 +72,7 @@ class Downloader(BaseDownloader):
             filename = self.single_url[1].search(resp.text)
             if filename:
                 url = html_parser.unescape(self.single_url[0].search(resp.text).group(1))
-                filename = filename.group(1)
+                filename = filename.group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8")
                 yield (task.Task(filename = filename, url = [url],
                      opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
                 raise StopIteration
@@ -78,6 +80,8 @@ class Downloader(BaseDownloader):
                 arg2 = "/".join([
                     self.single_dir[1].search(resp.text).group(1),
                     quote(self.single_dir[0].search(resp.text).group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8"))])
+        else:
+            arg2 = arg2[9:]
 
         resq_url = "http://pan.baidu.com/share/list?%s&dir=%s" % (arg1, arg2)
 

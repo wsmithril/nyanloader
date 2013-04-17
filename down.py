@@ -61,12 +61,27 @@ def main_loop(url_list):
 
         print
         print "===== Downloading %d items =====" % len(downloading)
+        def mag(size, th = 0.8):
+            unit = ""
+            val  = size
+            for i in range(0, 3):
+                if val > th * 1024:
+                    unit = "kMG"[i]
+                    val /= 1024.0
+                else:
+                    break
+            return "%.1f%s" % (val, unit)
+
         for k, task in downloading.items():
+            percent_str = task.size == 0 and mag(task.downloaded) or "%sB/%sB %5.2f%%" % (
+                    mag(task.downloaded), mag(task.size),
+                    100.0 * task.downloaded / task.size)
+
             # show informations
-            print "Downloading [%s] @ %5.2fkB/s, %s completed, ETA: %s" % (
+            print "Downloading [%s] @ %sB/s, %s, ETA: %s" % (
                     task.filename,
-                    task.speed / 1024.0,
-                    task.size == 0 and "n.a." or "%5.2f%%" % (100.0 * task.downloaded / task.size),
+                    mag(task.speed),
+                    percent_str,
                     (task.size == 0 or task.speed == 0) and "n.a." or "%ds" % (1.0 * (task.size - task.downloaded) / task.speed))
 
     # close backend server
@@ -103,6 +118,9 @@ def download_task(url_list):
                 task = down_url_list.next()
             except StopIteration:
                 break
+            except Exception as e:
+                print "Fail to get filelist from %s" % (url)
+
             yield task
 
 if __name__ == "__main__":
