@@ -16,12 +16,6 @@ class BaseDownloader():
     TYPE_FOLDER = 1
     TYPE_FILE   = 0
 
-    def __init__(self, url = None):
-        if not url:
-            raise BaseDownloaderException("No url")
-        else:
-            pass
-
     def download_info(self):
         """ gather information from url,
             return generator of list of dict contains 2 key:

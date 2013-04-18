@@ -1,15 +1,13 @@
 """ Downloader class for pan.baidu.com """
 
-import simplejson as json, re, requests, inspect
-import config
-import task
-
+import simplejson as json, re, requests
 from StringIO import StringIO
-from os.path import dirname
-from __base__ import BaseDownloader, BaseDownloaderException
-from time import time
 from urllib2 import quote
 from HTMLParser import HTMLParser
+
+import config
+import task
+from __base__ import BaseDownloader, BaseDownloaderException
 
 html_parser = HTMLParser()
 
@@ -39,9 +37,6 @@ class Downloader(BaseDownloader):
         r'\\"parent_path\\":\\"((?:%|\w)*?)\\",'])
 
     cookies = None
-
-    def __init__(self):
-        pass
 
     def login(self, username = None, password = None):
         """ Login not needed """

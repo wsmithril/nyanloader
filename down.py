@@ -27,6 +27,10 @@ def main_loop(url_list):
     tasks = download_task(url_list)
     task  = None
 
+    #for t in tasks:
+        #print "File: %s, url: %s" % (t.filename, t.url)
+    #return
+
     while True:
         # start main loop
         while current_down <= config.max_concurrency:
@@ -119,7 +123,8 @@ def download_task(url_list):
             except StopIteration:
                 break
             except Exception as e:
-                print "Fail to get filelist from %s" % (url)
+                print "Fail to get filelist from %s, %s" % (url, str(e))
+                break
 
             yield task
 
