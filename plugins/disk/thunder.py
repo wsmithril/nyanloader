@@ -49,7 +49,6 @@ class Downloader(BaseDownloader):
                     resq_url = base_url + "?p_index=%s" % pg
                     resp = requests.get(resq_url, headers = self.header)
                 except Exception as e:
-                    print "Cannot read from Url: %s, %s", (url, str(e))
                     continue
 
             for l in self.file_regex.findall(resp.text):
@@ -66,6 +65,9 @@ class Downloader(BaseDownloader):
                     for t in self.download_info(durl):
                         yield t
                 else:
+                    if durl.startswith("#"):
+                        continue
+
                     yield (task.Task(filename = fn, url = [durl],
                            opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
 
