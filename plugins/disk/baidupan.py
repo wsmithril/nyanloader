@@ -5,9 +5,8 @@ from StringIO import StringIO
 from urllib2 import quote
 from HTMLParser import HTMLParser
 
-import config
-import task
-from __base__ import BaseDownloader, BaseDownloaderException
+from task import Task
+from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
 
 html_parser = HTMLParser()
 
@@ -25,8 +24,8 @@ class Downloader(BaseDownloader):
     # pretented to be firefox 20.0 on win 7
     header = {"User-Agent": "MozillaMozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20130403 Firefox/20.0"}
 
-    url_id_pattern = re.compile(r"^(?:http://)?pan.baidu.com/share/link\?")
-    url_parse = re.compile("^(?:http://)?pan.baidu.com/share/link\?([^#]*)(?:#(.*))?$")
+    url_id_pattern = re.compile(r"^(?:http://)?pan.baidu.com/share/(link|home)\?")
+    url_parse = re.compile("^(?:http://)?pan.baidu.com/share/(link|home)\?([^#]*)(?:#(.*))?$")
 
     single_url = map(lambda x: re.compile(x, re.MULTILINE), [
         r'<a\s+class="new-dbtn"\s+href="([^"]*)".*>',
@@ -47,12 +46,21 @@ class Downloader(BaseDownloader):
 
     def download_info(self, url, cookie = None):
         # parse url
+        home = None
         arg1 = None
         arg2 = None
         try:
-            arg1, arg2 = self.url_parse.match(url).group(1, 2)
+            home, arg1, arg2 = self.url_parse.match(url).group(1, 2)
         except Exception as e:
             raise BaseDownloaderException("URL Malform: %s, %s" % (url, str(e)))
+
+        # type?
+        url_type = ""
+        if home == "home":
+            url_type = "home"
+        elif not arg2 or not arg2.startswith("dir/path="):
+            url_type = "single"
+
 
         if not arg2 or not arg2.startswith("dir/path="):
             # single file
@@ -68,10 +76,11 @@ class Downloader(BaseDownloader):
             if filename:
                 url = html_parser.unescape(self.single_url[0].search(resp.text).group(1))
                 filename = filename.group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8")
-                yield (task.Task(filename = filename, url = [url],
+                yield (Task(filename = filename, url = [url],
                      opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
                 raise StopIteration
             else:
+                # single folder
                 arg2 = "/".join([
                     self.single_dir[1].search(resp.text).group(1),
                     quote(self.single_dir[0].search(resp.text).group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8"))])
@@ -94,6 +103,6 @@ class Downloader(BaseDownloader):
 
         # print "\n".join("%s - %s" % (n["server_filename"], n["dlink"]) for n in resp_json["list"])
         for n in resp_json["list"]:
-            yield (task.Task(filename = n["server_filename"], url = [n["dlink"]],
+            yield (Task(filename = n["server_filename"], url = [n["dlink"]],
                  opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
 

@@ -1,6 +1,7 @@
-import config
-from plugins.backend import backend, task_status
+""" task """
+
 from time import time
+from plugins.backend import backend, task_status
 
 class Task(object):
     """ Downloading task Control """

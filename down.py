@@ -3,9 +3,9 @@
 
 """ Main Control """
 
-import os, os.path as path, sys, argparse, signal
-from datetime import datetime
+import sys, argparse, signal
 from time import sleep
+from datetime import datetime
 
 import config
 
@@ -152,10 +152,8 @@ if __name__ == "__main__":
         print "No url to download"
         exit(3)
 
-    # import plugins
-    from plugins.backend import backend, task_status
     from plugins.disk import get_class
-    from task import Task
+    from plugins.backend import backend, task_status
 
     # Trap SIGINT and SIFTERM
     def stop_backend(sig, frame):

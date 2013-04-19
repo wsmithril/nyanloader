@@ -2,12 +2,11 @@
 aria2c json rpc control class
 """
 
-import urllib2, os, socket, subprocess, simplejson as json, inspect, signal
-import config, task
-
-from os.path import dirname
+import urllib2, os, socket, subprocess, simplejson as json, signal
 from StringIO import StringIO
-from __base__ import BaseBackend, BackendException, task_status
+
+import config
+from plugins.backend.__base__ import BaseBackend, BackendException, task_status
 
 # status mapping
 status_mapping = {

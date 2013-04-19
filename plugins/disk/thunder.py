@@ -3,8 +3,8 @@
 
 import re, requests
 
-import task, config
-from __base__ import BaseDownloader, BaseDownloaderException
+from task import Task
+from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
 
 class Downloader(BaseDownloader):
     """
@@ -74,6 +74,6 @@ class Downloader(BaseDownloader):
                     if durl.startswith("#"):
                         continue
 
-                    yield (task.Task(filename = fn, url = [durl],
+                    yield (Task(filename = fn, url = [durl],
                            opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
 

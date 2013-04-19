@@ -1,14 +1,15 @@
 """ Downloader class for f.xunlei.com """
 
 import simplejson as json, re, requests, inspect
-import config
 from StringIO import StringIO
 from os.path import dirname
-from __base__ import BaseDownloader, BaseDownloaderException
 from time import time
 from urllib2 import quote
 from md5 import md5
-import task
+
+import config
+from task import Task
+from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
 
 def pass_hash(p, s):
     return md5(md5(md5(p).hexdigest()).hexdigest() + s.upper()).hexdigest()
@@ -102,7 +103,7 @@ class Downloader(BaseDownloader):
 
         last_cookies = "Cookie: " + "; ".join("%s=%s" % (k, v) for k, v in resp.cookies.items())
 
-        return (task.Task(
+        return (Task(
                  filename = n["name"],
                  url      = [n["url"]],
                  opts     = {"header": [last_cookies] + ["%s: %s" % (k, v) for k, v in self.header.items()] + ["Referer: " + url]})
