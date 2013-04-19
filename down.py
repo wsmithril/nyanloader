@@ -27,9 +27,10 @@ def main_loop(url_list):
     tasks = download_task(url_list)
     task  = None
 
-    #for t in tasks:
-        #print "File: %s, url: %s" % (t.filename, t.url)
-    #return
+    if config.testmode:
+        for t in tasks:
+            print "File: %s, url: %s" % (t.filename, t.url)
+        return
 
     while True:
         # start main loop
@@ -131,6 +132,7 @@ def download_task(url_list):
 if __name__ == "__main__":
     # build cli args parser
     arg_parser = argparse.ArgumentParser(description = "Download file from varias net-disk")
+    arg_parser.add_argument("-T", "--test",      dest = 'testmode', action = "store_true", help = "Try to get file list only, not start download")
     arg_parser.add_argument("-l", "--list-file", type = file, dest = 'listfile', nargs = 1, metavar = "filename", help = "Read url list from file")
     arg_parser.add_argument("-v", "--verbose", action = "count", dest = "loglevel", default = 3)
     arg_parser.add_argument("url" , nargs = "*")
