@@ -72,6 +72,8 @@ class Backend(BaseBackend):
     rpc_basic      = {"jsonrpc": "2.0", "id": backend}
     default_option = { "dir": os.getcwd(), "continue": "true"}
 
+    local_start = False
+
     def __init__(self):
         """ start aria2c server if not started """
         self.process = None
@@ -83,6 +85,7 @@ class Backend(BaseBackend):
             # try to start server if we are running on local machine
             if self.status() != self.BE_RUNNING:
                 self.start_server()
+                self.local_start = True
             else:
                 print "aria2c server already started"
 
@@ -153,6 +156,8 @@ class Backend(BaseBackend):
 
     def terminate(self):
         """ terminate server """
+        if not self.local_start:
+            return
         if self.server_addr == "localhost" or self.server_addr == "127.0.0.1":
             # only terminate server running on local
             if self.process:

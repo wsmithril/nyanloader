@@ -6,10 +6,7 @@
 import os, os.path as path, sys, argparse, signal
 from datetime import datetime
 from time import sleep
-from task import Task
 
-from plugins.backend import backend, task_status
-from plugins.disk import get_class
 import config
 
 def now():
@@ -154,6 +151,11 @@ if __name__ == "__main__":
         arg_parser.print_help()
         print "No url to download"
         exit(3)
+
+    # import plugins
+    from plugins.backend import backend, task_status
+    from plugins.disk import get_class
+    from task import Task
 
     # Trap SIGINT and SIFTERM
     def stop_backend(sig, frame):

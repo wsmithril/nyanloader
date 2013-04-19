@@ -8,7 +8,7 @@ from __base__ import BaseDownloader, BaseDownloaderException
 from time import time
 from urllib2 import quote
 from md5 import md5
-from task import Task
+import task
 
 def pass_hash(p, s):
     return md5(md5(md5(p).hexdigest()).hexdigest() + s.upper()).hexdigest()
@@ -102,8 +102,8 @@ class Downloader(BaseDownloader):
 
         last_cookies = "Cookie: " + "; ".join("%s=%s" % (k, v) for k, v in resp.cookies.items())
 
-        return (
-            Task(filename = n["name"],
+        return (task.Task(
+                 filename = n["name"],
                  url      = [n["url"]],
                  opts     = {"header": [last_cookies] + ["%s: %s" % (k, v) for k, v in self.header.items()] + ["Referer: " + url]})
                 for n in resp_json["data"]["nodes"]

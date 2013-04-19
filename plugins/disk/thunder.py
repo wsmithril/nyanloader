@@ -15,7 +15,8 @@ class Downloader(BaseDownloader):
     brand = "kuai.xunlei.com"
 
     # pretent we are Firefox 20.0 on Win 7
-    header = {"User-Agent": "MozillaMozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20130403 Firefox/20.0"}
+    header = {"User-Agent": "MozillaMozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20130403 Firefox/20.0",
+              "Accept-Language": "zh-cn"}
 
     # all file in the url are in a the <a> tag under the class "file-name"
     # something like this one: <a ... class="file_name" href="url" ...>name</a>
@@ -50,6 +51,11 @@ class Downloader(BaseDownloader):
                     resp = requests.get(resq_url, headers = self.header)
                 except Exception as e:
                     continue
+
+            # kuai.xunlei.com set Encoding in the respond header as ISO-8859-1
+            # but the respond body is acutually in UTF-8. So, we need manually
+            # set it
+            resp.encoding = "utf-8"
 
             for l in self.file_regex.findall(resp.text):
                 fn   = None
