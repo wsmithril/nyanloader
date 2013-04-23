@@ -31,7 +31,7 @@ def main_loop(url_list):
 
     while True:
         # start main loop
-        while current_down <= config.max_concurrency:
+        while current_down < config.max_concurrency:
             try:
                 task = tasks.next()
             except StopIteration:
