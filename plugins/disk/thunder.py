@@ -23,6 +23,9 @@ class Downloader(BaseDownloader):
     file_regex   = re.compile(r'(<a.*?class="file_name".*?>)')
     ttasks_regex = re.compile(r'<input type="hidden" id="total_task" value="(\d+)"/>')
 
+    def __init__(self):
+        pass
+
     def login(self, username = None, password = None):
         """ No login required """
         return None
@@ -30,7 +33,7 @@ class Downloader(BaseDownloader):
     def url_pattern(self, url):
         return url.startswith("http://kuai.xunlei.com/")
 
-    def download_info(self, url, vookie = None):
+    def download_info(self, url, cookie = None):
         try:
             resp = requests.get(url, headers = self.header)
         except Exception as e:
