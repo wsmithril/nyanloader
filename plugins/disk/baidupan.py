@@ -81,7 +81,7 @@ class Downloader(BaseDownloader):
                 if len(f["fsIds"]) == 0:
                     continue
 
-                if f["typicalCategory"] == "-1":
+                if int(f["typicalCategory"]) == -1:
                     # Directory entry
                     resq_url = "http://pan.baidu.com/share/link?%s&shareid=%s#%s" % ( arg1, f["shareid"], quote(f['typicalPath']))
                 else:
@@ -130,9 +130,8 @@ class Downloader(BaseDownloader):
             resp_json = resp_json["list"]
 
         for n in resp_json:
-            if n["isdir"] == "1":
-                resq_url = resq_url + "#dir/path=%2F" + quote(n["server_filename"])
-                print "Going into: ", resq_url
+            if int(n["isdir"]) == 1:
+                resq_url = "http://pan.baidu.com/share/link?%s#dir/path=%s" % (arg1, quote(n["path"].encode("utf-8")))
                 try:
                     for t in self.download_info(resq_url):
                         yield t
