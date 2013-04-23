@@ -27,15 +27,12 @@ class Downloader(BaseDownloader):
     url_id_pattern = re.compile(r"^(?:http://)?pan.baidu.com/share/(link|home)\?")
     url_parse = re.compile("^(?:http://)?pan.baidu.com/share/(link|home)\?([^#]*)(?:#(.*))?$")
 
-    single_url = map(lambda x: re.compile(x, re.MULTILINE), [
-        r'<a\s+class="new-dbtn"\s+href="([^"]*)".*>',
-        r'\\"server_filename\\":\\"((?:\\.|[^"])+?)\\",'])
-
-    single_dir = map(lambda r: re.compile(r), [
-        r'\\"server_filename\\":\\"((?:\\.|[^"])+?)\\",',
-        r'\\"parent_path\\":\\"((?:%|\w)*?)\\",'])
+    json_from_html = re.compile(r'<script type="text/javascript">.*?function.*?"(\[\{.*?\}\])".*?</script>')
 
     cookies = None
+
+    def __init__(self):
+        pass
 
     def login(self, username = None, password = None):
         """ Login not needed """
@@ -50,59 +47,99 @@ class Downloader(BaseDownloader):
         arg1 = None
         arg2 = None
         try:
-            home, arg1, arg2 = self.url_parse.match(url).group(1, 2)
+            home, arg1, arg2 = self.url_parse.match(url).group(1, 2, 3)
         except Exception as e:
             raise BaseDownloaderException("URL Malform: %s, %s" % (url, str(e)))
 
         # type?
         url_type = ""
         if home == "home":
-            url_type = "home"
-        elif not arg2 or not arg2.startswith("dir/path="):
-            url_type = "single"
+            # First, get num of file in home dir
+            try:
+                resp = requests.get(url, headers = self.header)
+            except Exception as e:
+                raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
+            num_of_file = int(re.compile(r'<em class="publiccnt">(\d+)</em>').search(resp.text).group(1))
 
+            # then make the request
+            # http://pan.baidu.com/share/homerecord?uk=[uk]&num=[num_of_file]&page=1&dir=%2F
+            resq_url = "http://pan.baidu.com/share/homerecord?%s&num=%d&page=1&dir=%%2F" % (arg1, num_of_file)
 
-        if not arg2 or not arg2.startswith("dir/path="):
-            # single file
-            resq_url = url
-
-            # get file list
             try:
                 resp = requests.get(resq_url, headers = self.header)
             except Exception as e:
                 raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
 
-            filename = self.single_url[1].search(resp.text)
-            if filename:
-                url = html_parser.unescape(self.single_url[0].search(resp.text).group(1))
-                filename = filename.group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8")
-                yield (Task(filename = filename, url = [url],
-                     opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
-                raise StopIteration
-            else:
-                # single folder
-                arg2 = "/".join([
-                    self.single_dir[1].search(resp.text).group(1),
-                    quote(self.single_dir[0].search(resp.text).group(1).replace('\\\\', '\\').decode("unicode_escape").encode("utf-8"))])
+            resp_json = json.load(StringIO(resp.text))
+
+            if resp_json["errno"] != 0:
+                print "resp: %r" % resp_json
+                print "url: %s"  % resq_url
+                raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
+
+            for f in resp_json["list"]:
+                if len(f["fsIds"]) == 0:
+                    continue
+
+                if f["typicalCategory"] == "-1":
+                    # Directory entry
+                    resq_url = "http://pan.baidu.com/share/link?%s&shareid=%s#%s" % ( arg1, f["shareid"], quote(f['typicalPath']))
+                else:
+                    # file entry, yield recursive
+                    resq_url = "http://pan.baidu.com/share/link?%s&shareid=%s" % (arg1, f["shareId"])
+
+                try:
+                    for t in self.download_info(resq_url):
+                        yield t
+                except Exception as e:
+                    print "Url %s fail, %s" % (resq_url, str(e))
+                    continue
+
+            raise StopIteration
+
+        resp_json = []
+        if not arg2 or not arg2.startswith("dir/path="):
+            # json in HTML
+            resq_url = url
+            try:
+                resp = requests.get(resq_url, headers = self.header)
+            except Exception as e:
+                raise BaseDownloaderException("Fail to get file list from %s, %s" % (url, str(e)));
+
+            # extract json from HTML
+            try:
+                resp_json = json.load(StringIO(self.json_from_html.search(resp.text).group(1).replace('\\\\', '\\').replace('\\"', '"')))
+            except Exception as e:
+                raise BaseDownloaderException("Url %s contains no file" % url)
         else:
-            arg2 = arg2[9:]
+            # get JSON from an request
+            resq_url = "http://pan.baidu.com/share/list?%s&dir=%s" % (arg1, arg2[9:])
 
-        resq_url = "http://pan.baidu.com/share/list?%s&dir=%s" % (arg1, arg2)
+            try:
+                resp = requests.get(resq_url, headers = self.header)
+            except Exception as e:
+                raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
 
-        try:
-            resp = requests.get(resq_url, headers = self.header)
-        except Exception as e:
-            raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
+            resp_json = json.load(StringIO(resp.text))
 
-        resp_json = json.load(StringIO(resp.text))
+            if resp_json["errno"] != 0:
+                print "resp: %r" % resp_json
+                print "url: %s"  % resq_url
+                raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
 
-        if resp_json["errno"] != 0:
-            print "resp: %r" % resp_json
-            print "url: %s"  % resq_url
-            raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
+            resp_json = resp_json["list"]
 
-        # print "\n".join("%s - %s" % (n["server_filename"], n["dlink"]) for n in resp_json["list"])
-        for n in resp_json["list"]:
-            yield (Task(filename = n["server_filename"], url = [n["dlink"]],
-                 opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
+        for n in resp_json:
+            if n["isdir"] == "1":
+                resq_url = resq_url + "#dir/path=%2F" + quote(n["server_filename"])
+                print "Going into: ", resq_url
+                try:
+                    for t in self.download_info(resq_url):
+                        yield t
+                except Exception as e:
+                    print "Url %s fail, %s" % (resq_url, str(e))
+                    continue
+            else:
+                yield (Task(filename = n["server_filename"], url = [n["dlink"]],
+                     opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
 
