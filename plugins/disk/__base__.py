@@ -6,6 +6,7 @@ class BaseDownloaderException(Exception):
     """ Downloader exceptions """
 
     def __init__(self, msg = "Unspecified Exception"):
+        super(BaseDownloaderException, self).__init__()
         self.messege = msg
 
     def __str__(self):
@@ -13,19 +14,13 @@ class BaseDownloaderException(Exception):
 
 class BaseDownloader():
     brand = None
-    TYPE_FOLDER = 1
-    TYPE_FILE   = 0
 
-    def download_info(self):
-        """ gather information from url,
-            return generator of list of dict contains 2 key:
-                filename - the real filenamer
-                url      - list of usable url
-        """
+    def download_info(self, url, cookie):
+        """ return task list from URL """
         raise BaseDownloaderException("download_info Not implemented")
 
     def login(self, username = None, password = None):
-        """ Login. return cookie dictionary """
+        """ Login. return cookie """
         if not (username and password):
             return {}
         else:
