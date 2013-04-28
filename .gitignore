@@ -1,9 +1,4 @@
 # all .pyc file
 *.pyc
-
-test.py
-cookies/*
-convert-cookie-ff.py
 *.swp
-temp/*
-
+__pycache__/*
