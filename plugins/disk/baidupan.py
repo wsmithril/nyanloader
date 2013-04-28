@@ -82,15 +82,12 @@ class Downloader(BaseDownloader):
                     continue
 
                 if int(f["typicalCategory"]) == -1:
-                    # Directory entry
-                    resq_url = "http://pan.baidu.com/share/link?%s&shareid=%s#%s" % ( arg1, f["shareid"], quote(f['typicalPath']))
+                    resq_url = "http://pan.baidu.com/share/link?%s&shareid=%s#%s" % ( arg1, f["shareId"], quote(f['typicalPath']))
                 else:
-                    # file entry, yield recursive
                     resq_url = "http://pan.baidu.com/share/link?%s&shareid=%s" % (arg1, f["shareId"])
 
                 try:
-                    for t in self.download_info(resq_url):
-                        yield t
+                    yield from self.download_info(resq_url)
                 except Exception as e:
                     print("Url %s fail, %s" % (resq_url, str(e)))
                     continue
@@ -133,8 +130,7 @@ class Downloader(BaseDownloader):
             if int(n["isdir"]) == 1:
                 resq_url = "http://pan.baidu.com/share/link?%s#dir/path=%s" % (arg1, quote(n["path"].encode("utf-8")))
                 try:
-                    for t in self.download_info(resq_url):
-                        yield t
+                    yield from self.download_info(resq_url)
                 except Exception as e:
                     print("Url %s fail, %s" % (resq_url, str(e)))
                     continue

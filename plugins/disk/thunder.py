@@ -71,8 +71,7 @@ class Downloader(BaseDownloader):
 
                 if durl.startswith("http://kuai.xunlei.com/"):
                     # this is an dir, we needs to recursively yields it
-                    for t in self.download_info(durl):
-                        yield t
+                    yield from self.download_info(durl)
                 else:
                     if durl.startswith("#"):
                         continue
