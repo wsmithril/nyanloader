@@ -27,15 +27,12 @@ class Singleton(type):
             cls._instance[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instance[cls]
 
-class BaseBackend(object):
+class BaseBackend(object, metaclass=Singleton):
     """
     Download Manager Class
     parse url to get download url, and pass url to backend
     provide method to add task and querry download status
     """
-
-    # Any backend should be a Singleton
-    __metaclass__ = Singleton
 
     backend = None
     max_concurrecy = config.max_concurrency

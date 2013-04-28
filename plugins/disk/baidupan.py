@@ -1,9 +1,9 @@
 """ Downloader class for pan.baidu.com """
 
 import simplejson as json, re, requests
-from StringIO import StringIO
-from urllib2 import quote
-from HTMLParser import HTMLParser
+from io import StringIO
+from urllib.parse import quote
+from html.parser import HTMLParser
 
 from task import Task
 from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
@@ -73,8 +73,8 @@ class Downloader(BaseDownloader):
             resp_json = json.load(StringIO(resp.text))
 
             if resp_json["errno"] != 0:
-                print "resp: %r" % resp_json
-                print "url: %s"  % resq_url
+                print("resp: %r" % resp_json)
+                print("url: %s"  % resq_url)
                 raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
 
             for f in resp_json["list"]:
@@ -92,7 +92,7 @@ class Downloader(BaseDownloader):
                     for t in self.download_info(resq_url):
                         yield t
                 except Exception as e:
-                    print "Url %s fail, %s" % (resq_url, str(e))
+                    print("Url %s fail, %s" % (resq_url, str(e)))
                     continue
 
             raise StopIteration
@@ -123,8 +123,8 @@ class Downloader(BaseDownloader):
             resp_json = json.load(StringIO(resp.text))
 
             if resp_json["errno"] != 0:
-                print "resp: %r" % resp_json
-                print "url: %s"  % resq_url
+                print("resp: %r" % resp_json)
+                print("url: %s"  % resq_url)
                 raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
 
             resp_json = resp_json["list"]
@@ -136,9 +136,9 @@ class Downloader(BaseDownloader):
                     for t in self.download_info(resq_url):
                         yield t
                 except Exception as e:
-                    print "Url %s fail, %s" % (resq_url, str(e))
+                    print("Url %s fail, %s" % (resq_url, str(e)))
                     continue
             else:
                 yield (Task(filename = n["server_filename"], url = [n["dlink"]],
-                     opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
+                     opts = {"header": ["%s: %s" % (k, v) for k, v in list(self.header.items())]}))
 

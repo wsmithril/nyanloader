@@ -47,7 +47,7 @@ class Downloader(BaseDownloader):
 
         base_url = resp.url
 
-        for pg in xrange(1, num_of_pages + 1):
+        for pg in range(1, num_of_pages + 1):
             if pg > 1:
                 try:
                     resq_url = base_url + "?p_index=%s" % pg
@@ -78,5 +78,5 @@ class Downloader(BaseDownloader):
                         continue
 
                     yield (Task(filename = fn, url = [durl],
-                           opts = {"header": ["%s: %s" % (k, v) for k, v in self.header.items()]}))
+                           opts = {"header": ["%s: %s" % (k, v) for k, v in list(self.header.items())]}))
 

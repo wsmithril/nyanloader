@@ -1,10 +1,10 @@
 """ Downloader class for f.xunlei.com """
 
 import simplejson as json, re, requests, inspect
-from StringIO import StringIO
+from io import StringIO
 from os.path import dirname
 from time import time
-from urllib2 import quote
+from urllib.parse import quote
 from md5 import md5
 
 import config
@@ -101,12 +101,12 @@ class Downloader(BaseDownloader):
         else:
             num_of_file = 1
 
-        last_cookies = "Cookie: " + "; ".join("%s=%s" % (k, v) for k, v in resp.cookies.items())
+        last_cookies = "Cookie: " + "; ".join("%s=%s" % (k, v) for k, v in list(resp.cookies.items()))
 
         return (Task(
                  filename = n["name"],
                  url      = [n["url"]],
-                 opts     = {"header": [last_cookies] + ["%s: %s" % (k, v) for k, v in self.header.items()] + ["Referer: " + url]})
+                 opts     = {"header": [last_cookies] + ["%s: %s" % (k, v) for k, v in list(self.header.items())] + ["Referer: " + url]})
                 for n in resp_json["data"]["nodes"]
                 if url_type == self.TYPE_FOLDER or n["nodeId"] == node)
 

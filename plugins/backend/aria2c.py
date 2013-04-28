@@ -2,8 +2,8 @@
 aria2c json rpc control class
 """
 
-import urllib2, os, socket, subprocess, simplejson as json, signal
-from StringIO import StringIO
+import urllib.request, urllib.error, urllib.parse, os, socket, subprocess, simplejson as json, signal
+from io import StringIO
 
 import config
 from plugins.backend.__base__ import BaseBackend, BackendException, task_status
@@ -86,7 +86,7 @@ class Backend(BaseBackend):
                 self.start_server()
                 self.local_start = True
             else:
-                print "aria2c server already started"
+                print("aria2c server already started")
 
     def status(self):
         """ querry backend status, return BE_RUNNING or BE_DOWN or BE_NA """
@@ -106,7 +106,7 @@ class Backend(BaseBackend):
         self.process.stdout.close()
         self.process.stderr.close()
         self.process.stdin.close()
-        print "aria2c started"
+        print("aria2c started")
 
     def __rpc_call__(self, method, params = []):
         json_dict = self.rpc_basic
@@ -115,7 +115,7 @@ class Backend(BaseBackend):
 
         # call the rpc server
         try:
-            call = urllib2.urlopen(self.server_url, json.dumps(json_dict))
+            call = urllib.request.urlopen(self.server_url, json.dumps(json_dict))
             resp = json.load(StringIO(call.read()))
             call.close()
         except Exception as e:
@@ -131,9 +131,9 @@ class Backend(BaseBackend):
                     method = "aria2.addUri"
                   , params = [
                         task.url
-                      , dict(self.default_option.items()
-                           + task.opts.items()
-                           + local_opt.items())])
+                      , dict(list(self.default_option.items())
+                           + list(task.opts.items())
+                           + list(local_opt.items()))])
         return resp
 
     def querry_task_status(self, task):
@@ -160,9 +160,9 @@ class Backend(BaseBackend):
         if self.server_addr == "localhost" or self.server_addr == "127.0.0.1":
             # only terminate server running on local
             if self.process:
-                print "Send SIGTERM to backend [%d]" % self.process.pid
+                print("Send SIGTERM to backend [%d]" % self.process.pid)
                 self.process.send_signal(signal.SIGTERM)
-                print "wait backend to exit"
+                print("wait backend to exit")
                 self.process.wait()
 
     def cleanup(self):

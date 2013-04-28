@@ -1,4 +1,4 @@
-#! /bin/env python
+#! /bin/env python3
 # -*- coding: utf-8 -*-
 
 """ Main Control """
@@ -26,19 +26,19 @@ def main_loop(url_list):
 
     if config.testmode:
         for t in tasks:
-            print "File: %s, url: %s" % (t.filename, t.url)
+            print("File: %s, url: %s" % (t.filename, t.url))
         return
 
     while True:
         # start main loop
         while current_down < config.max_concurrency:
             try:
-                task = tasks.next()
+                task = next(tasks)
             except StopIteration:
                 break;
 
             # new task
-            print "Starting download [%s]" % (task.filename)
+            print("Starting download [%s]" % (task.filename))
             key = task.start()
             downloading[key] = task
             current_down += 1
@@ -46,23 +46,23 @@ def main_loop(url_list):
         sleep(5)
 
         # querry task status
-        for k, task in downloading.items():
+        for k, task in list(downloading.items()):
             state = task.status()
             if state == task_status["complete"] or state == task_status["other"]:
                 t = downloading.pop(k)
-                print "[%s] Completed" % t.filename
+                print("[%s] Completed" % t.filename)
                 current_down -= 1
             elif state == task_status["error"]:
                 t = downloading.pop(k)
-                print "[%s] Error" % t.filename
+                print("[%s] Error" % t.filename)
                 error_list.append(t)
                 current_down -= 1
 
         if current_down == 0:
             break;
 
-        print
-        print "===== Downloading %d items =====" % len(downloading)
+        print()
+        print("===== Downloading %d items =====" % len(downloading))
         def mag(size, th = 0.8):
             unit = ""
             val  = size
@@ -74,24 +74,24 @@ def main_loop(url_list):
                     break
             return "%.1f%s" % (val, unit)
 
-        for k, task in downloading.items():
+        for k, task in list(downloading.items()):
             percent_str = task.size == 0 and mag(task.downloaded) or "%sB/%sB %5.2f%%" % (
                     mag(task.downloaded), mag(task.size),
                     100.0 * task.downloaded / task.size)
 
             # show informations
-            print "Downloading [%s] @ %sB/s, %s, ETA: %s" % (
+            print("Downloading [%s] @ %sB/s, %s, ETA: %s" % (
                     task.filename,
                     mag(task.speed),
                     percent_str,
-                    (task.size == 0 or task.speed == 0) and "n.a." or "%ds" % (1.0 * (task.size - task.downloaded) / task.speed))
+                    (task.size == 0 or task.speed == 0) and "n.a." or "%ds" % (1.0 * (task.size - task.downloaded) / task.speed)))
 
     # close backend server
     backend.terminate()
 
     # show all failed tasks
     for t in error_list:
-        print "%s Failed" % t.filename
+        print("%s Failed" % t.filename)
 
 def download_task(url_list):
     """ generator for duwnload urls, yields urls """
@@ -102,10 +102,10 @@ def download_task(url_list):
     for url in url_list:
         brand = get_class(url)
         if not brand:
-            print "Cannot parse %s as any of known net-disk providor" % url
+            print("Cannot parse %s as any of known net-disk providor" % url)
             continue;
         else:
-            print "%s recorgnized as %s" %(url, brand.brand)
+            print("%s recorgnized as %s" %(url, brand.brand))
 
         # get cookies
         try:
@@ -117,11 +117,11 @@ def download_task(url_list):
         down_url_list = brand.download_info(url, cookie)
         while True:
             try:
-                task = down_url_list.next()
+                task = next(down_url_list)
             except StopIteration:
                 break
             except Exception as e:
-                print "Fail to get filelist from %s, %s" % (url, str(e))
+                print("Fail to get filelist from %s, %s" % (url, str(e)))
                 break
 
             yield task
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     # build cli args parser
     arg_parser = argparse.ArgumentParser(description = "Download file from varias net-disk")
     arg_parser.add_argument("-T", "--test",      dest = 'testmode', action = "store_true", help = "Try to get file list only, not start download")
-    arg_parser.add_argument("-l", "--list-file", type = file, dest = 'listfile', nargs = 1, metavar = "filename", help = "Read url list from file")
+    arg_parser.add_argument("-l", "--list-file", type = open, dest = 'listfile', nargs = 1, metavar = "filename", help = "Read url list from file")
     arg_parser.add_argument("-v", "--verbose", action = "count", dest = "loglevel", default = 3)
     arg_parser.add_argument("url" , nargs = "*")
 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
 
     if not url_list:
         arg_parser.print_help()
-        print "No url to download"
+        print("No url to download")
         exit(3)
 
     from plugins.disk import get_class
@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     # Trap SIGINT and SIFTERM
     def stop_backend(sig, frame):
-        print "SIGINT caught, send SIGTERM to backend"
+        print("SIGINT caught, send SIGTERM to backend")
         backend.terminate()
         sys.exit(127)
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     try:
         main_loop(url_list)
     except Exception as e:
-        print "Well, sonething went wrong..."
+        print("Well, sonething went wrong...")
         backend.terminate()
         import traceback
         traceback.print_exc()
