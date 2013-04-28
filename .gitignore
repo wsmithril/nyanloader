@@ -1,4 +1,3 @@
 # all .pyc file
 *.pyc
 *.swp
-__pycache__/*
