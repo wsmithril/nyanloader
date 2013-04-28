@@ -115,8 +115,8 @@ class Backend(BaseBackend):
 
         # call the rpc server
         try:
-            call = urllib.request.urlopen(self.server_url, json.dumps(json_dict))
-            resp = json.load(StringIO(call.read()))
+            call = urllib.request.urlopen(self.server_url, bytes(json.dumps(json_dict), encoding="utf-8"))
+            resp = json.load(StringIO(str(call.read(), encoding = "utf-8")))
             call.close()
         except Exception as e:
             raise BackendException("RPC Failed, call: %r, %s" % (json_dict, str(e)))

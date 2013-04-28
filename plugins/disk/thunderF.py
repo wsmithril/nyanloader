@@ -5,7 +5,7 @@ from io import StringIO
 from os.path import dirname
 from time import time
 from urllib.parse import quote
-from md5 import md5
+from hashlib import md5
 
 import config
 from task import Task
