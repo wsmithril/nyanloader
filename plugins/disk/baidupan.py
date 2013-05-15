@@ -27,7 +27,7 @@ class Downloader(BaseDownloader):
     url_id_pattern = re.compile(r"^(?:http://)?pan.baidu.com/share/(link|home)\?")
     url_parse = re.compile("^(?:http://)?pan.baidu.com/share/(link|home)\?([^#]*)(?:#(.*))?$")
 
-    json_from_html = re.compile(r'<script type="text/javascript">.*?function.*?"(\[\{.*?\}\])".*?</script>')
+    json_from_html = re.compile(r'<script type="text/javascript">.*?"(\[\{.*?\}\])".*?</script>')
 
     cookies = None
 
