@@ -29,13 +29,15 @@ def main_loop(url_list):
             print("File: %s, url: %s" % (t.filename, t.url))
         return
 
-    while True:
+    alldone = False
+    while not alldone:
         # start main loop
         while current_down < config.max_concurrency:
             try:
                 task = next(tasks)
             except StopIteration:
-                break;
+                alldone = True
+                break
 
             # new task
             print("Starting download [%s]" % (task.filename))
@@ -57,9 +59,6 @@ def main_loop(url_list):
                 print("[%s] Error" % t.filename)
                 error_list.append(t)
                 current_down -= 1
-
-        if current_down == 0:
-            break;
 
         print()
         print("===== Downloading %d items =====" % len(downloading))
