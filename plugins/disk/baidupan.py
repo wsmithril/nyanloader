@@ -64,14 +64,14 @@ class Downloader(BaseDownloader):
     def filelist_json_gen(baseurl, filelist):
         for fileinfo in filelist:
             if int(fileinfo["isdir"]) == 1:
-                yield from Downloader.fileinfo_from_dir(baseurl, fileinfo["path"])
+                yield from Downloader.filelist_json_gen(baseurl, Downloader.get_json_for_dir(baseurl, fileinfo["path"]))
             else:
                 yield (Task(filename = fileinfo["server_filename"], url = [fileinfo["dlink"]],
                      opts = {"header": ["%s: %s" % (k, v) for k, v in list(Downloader.header.items())]}))
         raise StopIteration
 
     @staticmethod
-    def fileinfo_from_dir(baseurl, dir_name):
+    def get_json_for_dir(baseurl, dir_name):
         # form url
         url = baseurl + '&dir=%s' % (dir_name)
         try:
@@ -83,8 +83,7 @@ class Downloader(BaseDownloader):
             print("resp: %r" % ret_json)
             print("url: %s"  % url)
             raise BaseDownloaderException("Server returns error: %d" % ret_json["errno"])
-        ret_json = ret_json["list"]
-        yield from Downloader.filelist_json_gen(baseurl, ret_json)
+        return ret_json["list"]
 
     @staticmethod
     def fileinfo_from_list(url):
@@ -111,7 +110,7 @@ class Downloader(BaseDownloader):
         if dir_name:
             dir_name = dir_name.group(1)
             # extract uk and share_id
-            resp_json = Downloader.fileinfo_from_dir(baseurl, dir_name)
+            resp_json = Downloader.get_json_for_dir(baseurl, dir_name)
         else:
             # file list hides in json embbeded in page
             resp_json = Downloader.extract_filejson(resp.text)
