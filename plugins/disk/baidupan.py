@@ -2,13 +2,9 @@
 
 import simplejson as json, re, requests
 from io import StringIO
-from urllib.parse import quote
-from html.parser import HTMLParser
 
 from task import Task
 from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
-
-html_parser = HTMLParser()
 
 class Downloader(BaseDownloader):
     """
@@ -32,8 +28,7 @@ class Downloader(BaseDownloader):
             None
         )
 
-    def __init__(self):
-        pass
+    def __init__(self): pass
 
     @staticmethod
     def login(username = None, password = None):
