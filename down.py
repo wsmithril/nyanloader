@@ -4,6 +4,7 @@
 """ Main Control """
 
 import sys, argparse, signal
+import traceback
 from time import sleep
 from datetime import datetime
 
@@ -30,7 +31,7 @@ def main_loop(url_list):
         return
 
     alldone = False
-    while not alldone:
+    while not alldone or current_down > 0:
         # start main loop
         while current_down < config.max_concurrency:
             try:
@@ -121,6 +122,7 @@ def download_task(url_list):
                 break
             except Exception as e:
                 print("Fail to get filelist from %s, %s" % (url, str(e)))
+                traceback.print_exc()
                 break
 
             yield task
@@ -169,5 +171,4 @@ if __name__ == "__main__":
     except Exception as e:
         print("Well, sonething went wrong...")
         backend.terminate()
-        import traceback
         traceback.print_exc()

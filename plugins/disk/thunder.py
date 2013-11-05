@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """ For kuai.xunlei.com """
 
-import re, requests
+import re, requests, traceback
 
 from task import Task
 from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
@@ -26,18 +26,21 @@ class Downloader(BaseDownloader):
     def __init__(self):
         pass
 
-    def login(self, username = None, password = None):
+    @staticmethod
+    def login(username = None, password = None):
         """ No login required """
         return None
 
-    def url_pattern(self, url):
+    @staticmethod
+    def url_pattern(url):
         return url.startswith("http://kuai.xunlei.com/")
 
     def download_info(self, url, cookie = None):
         try:
             resp = requests.get(url, headers = self.header)
         except Exception as e:
-            raise BaseDownloaderException("Cannot read from Url: %s, %s", (url, str(e)))
+            traceback.print_exc()
+            raise BaseDownloaderException("Cannot read from Url: %s, %s" % (url, str(e)))
 
         # get number of pages
         try:

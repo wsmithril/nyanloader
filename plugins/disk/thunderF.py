@@ -28,7 +28,8 @@ class Downloader(BaseDownloader):
     def __init__(self):
         pass
 
-    def login(self, username = config.thunderF_username, password = config.thunderF_password):
+    @staticmethod
+    def login(username = config.thunderF_username, password = config.thunderF_password):
         """ use username and password to login
             due to design flaut of in the site, We can actually bypass the verify code,
             for f.xunlei.com provides alternative verify method in their javascript"""
@@ -47,10 +48,12 @@ class Downloader(BaseDownloader):
                 "http://login.xunlei.com/sec2login/?xltime=%d" % time()
             ,   data = post_data
             ,   cookies = resp.cookies, headers = self.header)
+        Downloader.cookies = resp.cookies
         return resp.cookies
 
-    def url_pattern(self, url):
-        return self.url_id_pattern.match(url) and True or False
+    @staticmethod
+    def url_pattern(url):
+        return Downloader.url_id_pattern.match(url) and True or False
 
     def download_info(self, url, cookie):
         # parse url

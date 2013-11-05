@@ -19,14 +19,15 @@ class BaseDownloader():
         """ return task list from URL """
         raise BaseDownloaderException("download_info Not implemented")
 
-    def login(self, username = None, password = None):
+    @staticmethod
+    def login(username = None, password = None):
         """ Login. return cookie """
         if not (username and password):
             return {}
         else:
             raise BaseDownloaderException("Login not implemented")
 
-    def url_pattern(self, url):
-        return True
-
+    @staticmethod
+    def url_pattern(url):
+        raise BaseDownloaderException("staticmethod url_pattern() Must be implemed")
 
