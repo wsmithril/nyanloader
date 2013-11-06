@@ -56,13 +56,19 @@ class Downloader(BaseDownloader):
         return json.load(StringIO(filelist.search(text).group(1).replace('\\\\', '\\').replace('\\"', '"')))
 
     @staticmethod
-    def filelist_json_gen(baseurl, filelist):
+    def filelist_json_gen(baseurl, filelist, cookie = None):
         for fileinfo in filelist:
             if int(fileinfo["isdir"]) == 1:
-                yield from Downloader.filelist_json_gen(baseurl, Downloader.get_json_for_dir(baseurl, fileinfo["path"]))
+                yield from Downloader.filelist_json_gen(baseurl, Downloader.get_json_for_dir(baseurl, fileinfo["path"]), cookie)
             else:
-                yield (Task(filename = fileinfo["server_filename"], url = [fileinfo["dlink"]],
-                     opts = {"header": ["%s: %s" % (k, v) for k, v in list(Downloader.header.items())]}))
+                yield (Task(
+                    filename = fileinfo["server_filename"],
+                    url      = [fileinfo["dlink"]],
+                    opts     = {"header": ["%s: %s" % (k, v) for k, v in Downloader.header.items()]
+                                        + (cookie and ["Cookies: %s" % cookie] or [])
+                        })
+                )
+
         raise StopIteration
 
     @staticmethod
@@ -98,6 +104,7 @@ class Downloader(BaseDownloader):
             raise BaseDownloaderException("Url: %s has no file." % (url))
 
         baseurl = "http://pan.baidu.com/share/list?uk=%s&shareid=%s" % (uk, share_id)
+        cookies = '; '.join("%s=%s" % (k,v) for (k, v) in resp.cookies.get_dict().items())
 
         resp_json = []
         dir_name = re.compile(r'dir/path=([^#]+)').search(url)
@@ -111,7 +118,7 @@ class Downloader(BaseDownloader):
             resp_json = Downloader.extract_filejson(resp.text)
             if not resp_json:
                 raise BaseDownloaderException("Url: %s has no file." % (url))
-        yield from Downloader.filelist_json_gen(baseurl, resp_json)
+        yield from Downloader.filelist_json_gen(baseurl, resp_json, cookies)
 
     @staticmethod
     def fileinfo_from_home(url):
@@ -147,12 +154,13 @@ class Downloader(BaseDownloader):
 
             num_of_file = num_of_file - limit
             start       = start       + limit
+            cookies     = '; '.join("%s=%s" % (k,v) for (k, v) in resp.cookies.get_dict().items())
 
             for f in resp_json["records"]:
                 fileinfo = f["filelist"][0]
                 baseurl = fileinfo["isdir"] == 1 and "http://pan.baidu.com/share/list?uk=%s&shareid=%s" % (uk, f["shareid"])
                 try:
-                    yield from Downloader.filelist_json_gen(baseurl, [fileinfo])
+                    yield from Downloader.filelist_json_gen(baseurl, [fileinfo], cookies)
                 except Exception as e:
                     print("Failed: %s" % f)
         raise StopIteration
