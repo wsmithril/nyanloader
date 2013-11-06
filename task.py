@@ -15,6 +15,7 @@ class Task(object):
         self.downloaded = 0
         self.start_time = time()
         self.speed      = 0
+        self.statuscode = 0
 
     def start(self):
         self.key = backend.new_task(self)

@@ -57,7 +57,7 @@ def main_loop(url_list):
                 current_down -= 1
             elif state == task_status["error"]:
                 t = downloading.pop(k)
-                print("[%s] Error" % t.filename)
+                print("[%s] Error: %s" % (t.filename, backend.error_message(t.statuscode)))
                 error_list.append(t)
                 current_down -= 1
 
@@ -158,7 +158,6 @@ if __name__ == "__main__":
 
     # Trap SIGINT and SIFTERM
     def stop_backend(sig, frame):
-        print("SIGINT caught, send SIGTERM to backend")
         backend.terminate()
         sys.exit(127)
 
