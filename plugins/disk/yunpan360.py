@@ -63,16 +63,16 @@ class Downloader(BaseDownloader):
             resp_json = json.load(StringIO(post_resp.text))
         except Exception as e:
             raise BaseDownloaderException("\n".join([
-                ["  POST url: %s, data: %s" % (post_url, post_data)],
-                ["  Request: %s %s" % (post_resp.request.headers, post_resp.request.body)],
-                ["  Server respond: %d %s" % (post_resp.status_code, post_resp.text)],
+                "  POST url: %s, data: %s" % (post_url, post_data),
+                "  Request: %s %s" % (post_resp.request.headers, post_resp.request.body),
+                "  Server respond: %d %s" % (post_resp.status_code, post_resp.text),
             ]))
 
         if resp_json["errno"] != 0:
             raise BaseDownloaderException("\n".join([
-                ["  POST url: %s, data: %s" % (post_url, post_data)],
-                ["  Request: %s %s" % (post_resp.request.headers, post_resp.request.body)],
-                ["  Server respond: %d %s" % (post_resp.status_code, post_resp.text)],
+                "  POST url: %s, data: %s" % (post_url, post_data),
+                "  Request: %s %s" % (post_resp.request.headers, post_resp.request.body),
+                "  Server respond: %d %s" % (post_resp.status_code, post_resp.text),
             ]))
 
         return (Task(
@@ -96,12 +96,18 @@ class Downloader(BaseDownloader):
             raise BaseDownloaderException("Url %s has no file in it" % s)
 
         for fileinfo in rootFileList:
-            try:
-                yield Downloader.post_for_link(url, domain, shorturl, fileinfo)
-            except Exception as e:
-                print("Fail to get file %s:\n%s" % (fileinfo["path"], str(e)))
-                continue
-
+            if fileinfo["fhash"] != "":
+                try:
+                    yield Downloader.post_for_link(url, domain, shorturl, fileinfo)
+                except Exception as e:
+                    print("Fail to get file %s:\n%s" % (fileinfo["path"], str(e)))
+                    continue
+            else:
+                try:
+                    yield from Downloader.filelist_from_subdir(url, fileinfo["nid"], shorturl, domain)
+                except Exception as e:
+                    print("Fail to get file from subdir %s:\n%s" % (fileinfo["path"], str(e)))
+                    continue
         raise StopIteration
 
     @staticmethod
@@ -119,5 +125,41 @@ class Downloader(BaseDownloader):
             raise BaseDownloaderException("Url: %s has no file.\n%s" % (url, str(e)))
 
         return Downloader.post_for_link(url, domain, surl, {"nid": nid, "path": name})
+
+    @staticmethod
+    def filelist_from_subdir(url, nid, surl, domain):
+        header = dict(list(Downloader.header.items()) + [
+            ("Referer", url),
+            ("Content-Type", "application/x-www-form-urlencoded UTF-8; charset=UTF-8")
+        ])
+        post_url  = "http://%s/share/listsharedir/" % domain
+        try:
+            post_data = format_payload(surl, nid)
+            post_resp = requests.post(post_url, data = post_data, headers = header)
+            resp_json = json.load(StringIO(re.compile(r'data:(\[\{.*\}\])\}').search(post_resp.text).group(1)))
+        except Exception as e:
+            raise BaseDownloaderException("\n".join([
+                "  POST url: %s, data: %s" % (post_url, post_data),
+                "  Request: %s %s" % (post_resp.request.headers, post_resp.request.body),
+                "  Server respond: %d %s" % (post_resp.status_code, post_resp.text),
+            ]))
+
+        for fileinfo in resp_json:
+            if fileinfo["fhash"] != "":
+                try:
+                    yield Downloader.post_for_link(url, domain, surl, fileinfo)
+                except Exception as e:
+                    print("Fail to get file %s:\n%s" % (fileinfo["path"], str(e)))
+                    continue
+            else:
+                try:
+                    yield from Downloader.filelist_from_subdir(url, fileinfo["nid"], surl, domain)
+                except Exception as e:
+                    print("Fail to get file from subdir [%s]:\n%s" % (fileinfo["path"], str(e)))
+                    continue
+        raise StopIteration
+
+
+
 
 
