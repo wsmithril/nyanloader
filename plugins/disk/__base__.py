@@ -10,7 +10,7 @@ class BaseDownloaderException(Exception):
         self.messege = msg
 
     def __str__(self):
-        return repr(self.messege)
+        return self.messege
 
 class BaseDownloader():
     brand = None
