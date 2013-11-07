@@ -19,3 +19,8 @@ aria2c_port = 9410
 thunderF_username = "l200646@rtrtr.com"
 thunderF_password = "fuck_xunlei"
 
+# username and password for pan.baidu.com
+baidu_account = "c344666@drdrb.com"
+baidu_passwd  = "1029384756"
+
+

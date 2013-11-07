@@ -2,9 +2,11 @@
 
 import simplejson as json, re, requests
 from io import StringIO
+from urllib.parse import quote
 
 from task import Task
 from plugins.disk.__base__ import BaseDownloader, BaseDownloaderException
+from config import baidu_account, baidu_passwd
 
 class Downloader(BaseDownloader):
     """
@@ -15,7 +17,9 @@ class Downloader(BaseDownloader):
 
     brand  = "pan.baidu.com - v2"
     # pretented to be firefox 20.0 on win 7
-    header = {"User-Agent": "MozillaMozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20130403 Firefox/20.0"}
+    header = {"User-Agent": "Mozilla/5.0 (Windows NT 6.1; rv:22.0) Gecko/20130629 Firefox/22.0",
+              "Referer": "http://pan.baidu.com/"}
+
     cookies = None
 
     @staticmethod
@@ -32,14 +36,37 @@ class Downloader(BaseDownloader):
 
     @staticmethod
     def login(username = None, password = None):
-        """ Login not needed """
+        # check if we already login
+        if Downloader.cookies: return None;
+
+        Downloader.cookies = {}
+
+        print("Login to %s..." % Downloader.brand)
+        # First, we needs to get http://pan.baidu.com to get a valid BAIDUID from cookie
+        resp = requests.get("http://pan.baidu.com/", headers = Downloader.header)
+        Downloader.cookies.update(resp.cookies.get_dict())
+
+        # then, we proceed to get token
+        resp  = requests.get("https://passport.baidu.com/v2/api/?getapi&apiver=v3&class=login&logintype=basicLogin",
+                             cookies = Downloader.cookies, headers = Downloader.header)
+        token = re.compile(r'"token"\s*:\s*"(\w+)",').search(resp.text).group(1)
+
+        # Finally, we can login. But wait a minute
+        # TRANSMITTING PASSWORD IN PLAINTEXT! BUT OVER HTTPS?! WTF!!!!!
+        post_url  = 'https://passport.baidu.com/v2/api/?login'
+        post_data = 'token=%s&logintype=basicLogin&username=%s&password=%s' % (
+                token, quote(baidu_account), quote(baidu_passwd))
+        header    = dict(list(Downloader.header.items()) + [("Content-Type", "application/x-www-form-urlencoded")])
+        resp = requests.post(post_url, data = post_data,
+                             cookies = Downloader.cookies, headers = header)
+        Downloader.cookies.update(resp.cookies.get_dict())
         return None
 
     @staticmethod
     def url_pattern(url):
         return Downloader.try_parse(url) and True or False
 
-    def download_info(self, url, cookie = None):
+    def download_info(self, url):
         # home or filelist
         url_type = Downloader.try_parse(url)
 
@@ -76,7 +103,7 @@ class Downloader(BaseDownloader):
         # form url
         url = baseurl + '&dir=%s' % (dir_name)
         try:
-            resp = requests.get(url, headers = Downloader.header)
+            resp = requests.get(url, headers = Downloader.header, cookies = Downloader.cookies)
         except Exception as e:
             raise BaseDownloaderException("Url: %s has no file. %s" % (url, str(e)))
         ret_json = json.load(StringIO(resp.text))
@@ -90,7 +117,7 @@ class Downloader(BaseDownloader):
     def fileinfo_from_list(url):
         # get page
         try:
-            resp = requests.get(url, headers = Downloader.header)
+            resp = requests.get(url, headers = Downloader.header, cookies = Downloader.cookies)
         except Exception as e:
             raise BaseDownloaderException("Fail to get url: %s, %s" % (url, str(e)))
 
@@ -104,7 +131,9 @@ class Downloader(BaseDownloader):
             raise BaseDownloaderException("Url: %s has no file." % (url))
 
         baseurl = "http://pan.baidu.com/share/list?uk=%s&shareid=%s" % (uk, share_id)
-        cookies = '; '.join("%s=%s" % (k,v) for (k, v) in resp.cookies.get_dict().items())
+
+        # merge cookies
+        cookies = '; '.join("%s=%s" % (k,v) for (k, v) in (list(Downloader.cookies.items()) + list(resp.cookies.items())))
 
         resp_json = []
         dir_name = re.compile(r'dir/path=([^#]+)').search(url)
@@ -126,7 +155,7 @@ class Downloader(BaseDownloader):
         uk = re.compile(r'uk=(\d+)').search(url).group(1)
 
         try:
-            resp = requests.get(url, headers = Downloader.header)
+            resp = requests.get(url, headers = Downloader.header, cookies = Downloader.cookies)
         except Exception as e:
             raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
 
@@ -141,7 +170,7 @@ class Downloader(BaseDownloader):
             resq_url = "http://pan.baidu.com/pcloud/feed/getsharelist?auth_type=1&request_location=share_home&start=%d&limit=%d&query_uk=%s" % (start, limit, uk)
 
             try:
-                resp = requests.get(resq_url, headers = Downloader.header)
+                resp = requests.get(resq_url, headers = Downloader.header, cookies = Downloader.cookies)
             except Exception as e:
                 raise BaseDownloaderException( "Fail to get file list from %s, %s" % (url, str(e)));
 
@@ -153,8 +182,10 @@ class Downloader(BaseDownloader):
                 raise BaseDownloaderException("Server returns error: %d" % resp_json["errno"])
 
             num_of_file = num_of_file - limit
-            start       = start       + limit
-            cookies     = '; '.join("%s=%s" % (k,v) for (k, v) in resp.cookies.get_dict().items())
+            start   = start       + limit
+
+            # merge cookies
+            cookies = '; '.join("%s=%s" % (k,v) for (k, v) in (list(Downloader.cookies.items()) + list(resp.cookies.items())))
 
             for f in resp_json["records"]:
                 fileinfo = f["filelist"][0]
