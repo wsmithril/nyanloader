@@ -55,7 +55,7 @@ class Downloader(BaseDownloader):
     def url_pattern(url):
         return Downloader.url_id_pattern.match(url) and True or False
 
-    def download_info(self, url, cookie):
+    def download_info(self, url):
         # parse url
         try:
             user_id, type_seg, node = self.parser_re.match(url).groups()

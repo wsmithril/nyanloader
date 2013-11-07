@@ -37,7 +37,7 @@ class Downloader(BaseDownloader):
         pattern = re.compile(r"(?:http://)?(?:\w+\.)?l\d+\.yunpan.cn/lk/.+")
         return pattern.match(url) and True or None
 
-    def download_info(self, url, cookies = {}):
+    def download_info(self, url):
         # extract filelist json from page
         try:
             page = requests.get(url, headers = Downloader.header)

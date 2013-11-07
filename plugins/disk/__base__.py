@@ -15,7 +15,7 @@ class BaseDownloaderException(Exception):
 class BaseDownloader():
     brand = None
 
-    def download_info(self, url, cookie):
+    def download_info(self, url):
         """ return task list from URL """
         raise BaseDownloaderException("download_info Not implemented")
 

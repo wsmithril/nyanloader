@@ -94,10 +94,7 @@ def main_loop(url_list):
         print("%s Failed" % t.filename)
 
 def download_task(url_list):
-    """ generator for duwnload urls, yields urls """
-
-    # cookies
-    cookies = {}
+    """ generator for duwnload urls, yields Task """
 
     for url in url_list:
         brand = get_class(url)
@@ -107,14 +104,10 @@ def download_task(url_list):
         else:
             print("%s recorgnized as %s" %(url, brand.brand))
 
-        # get cookies
-        try:
-            cookie = cookies[brand]
-        except KeyError:
-            cookie = brand.login()
-            cookies[brand] = cookie
+        # login if needed
+        brand.login()
 
-        down_url_list = brand.download_info(url, cookie)
+        down_url_list = brand.download_info(url)
         while True:
             try:
                 task = next(down_url_list)

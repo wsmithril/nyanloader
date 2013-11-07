@@ -35,7 +35,7 @@ class Downloader(BaseDownloader):
     def url_pattern(url):
         return url.startswith("http://kuai.xunlei.com/")
 
-    def download_info(self, url, cookie = None):
+    def download_info(self, url):
         try:
             resp = requests.get(url, headers = self.header)
         except Exception as e:
